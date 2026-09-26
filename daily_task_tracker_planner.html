@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Daily Task Tracker & Planner</title>
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="DayTrack Pro" />
+  <link rel="apple-touch-icon" id="apple-touch-icon" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for Weekly & Monthly Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    body { 
+      font-family: 'Inter', sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+      touch-action: manipulation;
+    }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 9999px; }
+    .task-completed {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 1.25rem);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0.5rem);
+    }
+    @media (max-width: 640px) {
+      .bottom-sheet-drawer {
+        border-bottom-left-radius: 0px !important;
+        border-bottom-right-radius: 0px !important;
+        max-height: 90vh;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Desktop & Mobile Header Bar with Live Passcode Sync Badge -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 pt-safe">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 flex-shrink-0">
+          <i class="fa-solid fa-list-check text-sm sm:text-base"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg leading-tight tracking-tight text-slate-800">DayTrack Pro</h1>
+            
+            <!-- Passcode Sync Pill -->
+            <button onclick="DayTracker.openPasscodeModal()" id="cloud-sync-status" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition hover:bg-emerald-100 shadow-2xs">
+              <span id="cloud-pulse-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="passcode-display-badge" class="font-mono font-bold tracking-wider">SYNC: MY-PLANNER</span>
+            </button>
+          </div>
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Passcode-Secured Real-Time Cross-Device Planner</p>
+        </div>
+      </div>
+
+      <!-- Header actions for Desktop / Tablet -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- Direct PWA Install Button (Displays when installable) -->
+        <button id="btn-install-app" class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition active:scale-95">
+          <i class="fa-solid fa-download text-xs"></i>
+          <span class="text-xs">Install App</span>
+        </button>
+
+        <button id="btn-open-templates" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition active:scale-95">
+          <i class="fa-solid fa-repeat text-indigo-600 text-xs"></i>
+          <span>Habits Bank</span>
+        </button>
+        <button id="btn-end-day" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition active:scale-95">
+          <i class="fa-solid fa-award text-xs"></i>
+          <span class="text-xs">End of Day</span>
+        </button>
+        <button onclick="DayTracker.openPasscodeModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-xs text-indigo-700 font-bold transition" title="Change Passcode">
+          <i class="fa-solid fa-key text-xs"></i>
+          <span class="hidden md:inline">Sync Key</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-6 w-full flex-1 flex flex-col gap-4 sm:gap-6 pb-24 md:pb-8">
+    
+    <!-- Top Date Control Bar & Progress Metrics -->
+    <div class="flex flex-col gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs">
+      <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-1 justify-between sm:justify-start">
+          <button id="btn-prev-day" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Previous Day">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+          </button>
+          
+          <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 flex-1 max-w-[220px] justify-center">
+            <i class="fa-solid fa-calendar-day text-indigo-600 text-xs flex-shrink-0"></i>
+            <input type="date" id="date-picker" class="bg-transparent font-bold text-slate-800 text-xs sm:text-sm focus:outline-none cursor-pointer w-full text-center">
+          </div>
+          
+          <button id="btn-next-day" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Next Day">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </button>
+        </div>
+        
+        <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+          <button id="btn-today" class="flex-1 sm:flex-none px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition text-center">Today</button>
+          <button id="btn-plan-tomorrow" class="flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+            <span>Plan Tomorrow</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Bar -->
+      <div class="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Done</span>
+          <span class="text-xs sm:text-sm font-extrabold text-slate-900"><span id="stat-achieved-count">0</span>/<span id="stat-total-count">0</span></span>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left border-x border-slate-200">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Score</span>
+          <span id="stat-rate" class="text-xs sm:text-sm font-extrabold text-indigo-600">0%</span>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Streak</span>
+          <span id="stat-streak" class="text-xs sm:text-sm font-extrabold text-amber-500">0d</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Navigation Tabs (Schedule vs Analytics) -->
+    <div class="hidden sm:flex border-b border-slate-200 text-sm font-semibold gap-6">
+      <button id="tab-btn-planner" class="pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition">
+        <i class="fa-solid fa-clock text-xs"></i> Time-Blocked Schedule
+      </button>
+      <button id="tab-btn-analytics" class="pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition">
+        <i class="fa-solid fa-chart-column text-xs"></i> Weekly & Monthly Analytics
+      </button>
+    </div>
+
+    <!-- VIEW 1: Daily Schedule View -->
+    <div id="view-planner" class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+      <!-- Main Timeline Section -->
+      <section class="lg:col-span-8 flex flex-col gap-3.5">
+        <!-- Filter Tabs & Add Button -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+            <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
+            <button data-filter="pending" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Pending</button>
+            <button data-filter="completed" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Achieved</button>
+          </div>
+
+          <button id="btn-desktop-add-task" class="hidden sm:flex px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-100 items-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Add Time Slot</span>
+          </button>
+        </div>
+
+        <!-- Dynamic Task List Container -->
+        <div id="task-list" class="space-y-2.5 min-h-[280px]">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- Empty State Screen -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+            <i class="fa-solid fa-calendar-plus text-lg"></i>
+          </div>
+          <h3 class="font-bold text-slate-800 text-sm sm:text-base">No tasks scheduled for this day</h3>
+          <p class="text-xs text-slate-500 max-w-xs mt-1 mb-4">Add your first time block or insert your recurring morning and evening habits with one tap.</p>
+          <div class="flex gap-2">
+            <button onclick="DayTracker.openTaskModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 active:scale-95 transition">Add Slot</button>
+            <button onclick="DayTracker.applyDefaultRecurring()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 active:scale-95 transition">Load Habits</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sidebar Controls / Habits -->
+      <aside class="lg:col-span-4 flex flex-col gap-4">
+        <!-- Daily Progress Bar -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-indigo-600"></i> Daily Completion
+            </h3>
+            <span id="progress-percentage-label" class="text-xs font-black text-indigo-600">0%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div id="progress-bar-fill" class="bg-indigo-600 h-2 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+          </div>
+          <p id="progress-subtext" class="text-[11px] sm:text-xs text-slate-500 leading-normal">Schedule your time blocks to maintain peak focus.</p>
+        </div>
+
+        <!-- Quick Repeating Habits Bank -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-repeat text-indigo-600"></i> Repeating Habits Bank
+            </h3>
+            <button id="btn-edit-recurring-list" class="text-xs text-indigo-600 font-bold hover:underline">Manage</button>
+          </div>
+          <p class="text-[11px] text-slate-500">Tap to instantly add to today's schedule:</p>
+          <div id="quick-habits-container" class="flex flex-col gap-2">
+            <!-- Dynamic quick habits -->
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- VIEW 2: Analytics & Achievement Charts View -->
+    <div id="view-analytics" class="hidden flex-col gap-4 sm:gap-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+        <div>
+          <h2 class="font-bold text-sm sm:text-base text-slate-800">Achievement Analytics</h2>
+          <p class="text-xs text-slate-500">Review consistency trends, completion rates, and focus discipline.</p>
+        </div>
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold w-full sm:w-auto">
+          <button id="chart-toggle-week" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs">Weekly</button>
+          <button id="chart-toggle-month" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900">Monthly</button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Avg Completion</span>
+          <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1" id="kpi-weekly-avg">0%</div>
+          <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
+            <i class="fa-solid fa-arrow-trend-up text-[10px]"></i> Goal: &gt; 80%
+          </span>
+        </div>
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Current Streak</span>
+          <div class="text-lg sm:text-2xl font-black text-amber-500 mt-1" id="kpi-streak">0 Days</div>
+          <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Consistent days</span>
+        </div>
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Total Achieved</span>
+          <div class="text-lg sm:text-2xl font-black text-indigo-600 mt-1" id="kpi-total-achieved">0</div>
+          <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Completed slots</span>
+        </div>
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Focus Hours</span>
+          <div class="text-lg sm:text-2xl font-black text-violet-600 mt-1" id="kpi-focus-hours">0h</div>
+          <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Deep work logged</span>
+        </div>
+      </div>
+
+      <!-- Main Achievement Graph -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+        <div class="flex items-center justify-between mb-3">
+          <h3 id="chart-main-title" class="font-bold text-xs sm:text-sm text-slate-800">Weekly Achievement Breakdown (%)</h3>
+          <span class="text-[10px] text-slate-400">Passcode Synced</span>
+        </div>
+        <div class="w-full h-56 sm:h-72">
+          <canvas id="achievementChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Floating Action Button (FAB) -->
+  <button id="fab-add-task" class="sm:hidden fixed right-4 bottom-20 z-40 w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-300 flex items-center justify-center active:scale-90 transition-transform" aria-label="Add Time Slot">
+    <i class="fa-solid fa-plus text-xl"></i>
+  </button>
+
+  <!-- Mobile Bottom Persistent Navigation Bar -->
+  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200 pb-safe shadow-lg">
+    <div class="grid grid-cols-4 h-14 items-center">
+      <button id="nav-btn-tasks" class="flex flex-col items-center justify-center gap-1 text-indigo-600">
+        <i class="fa-solid fa-calendar-day text-sm"></i>
+        <span class="text-[10px] font-bold">Tasks</span>
+      </button>
+      <button id="nav-btn-analytics" class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700">
+        <i class="fa-solid fa-chart-column text-sm"></i>
+        <span class="text-[10px] font-medium">Analytics</span>
+      </button>
+      <button id="nav-btn-habits" class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700">
+        <i class="fa-solid fa-repeat text-sm"></i>
+        <span class="text-[10px] font-medium">Habits</span>
+      </button>
+      <button id="nav-btn-passcode" onclick="DayTracker.openPasscodeModal()" class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700">
+        <i class="fa-solid fa-key text-sm"></i>
+        <span class="text-[10px] font-medium">Sync Key</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. MODAL: Add / Edit Task -->
+  <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
+      <div class="sm:hidden w-full flex justify-center pt-2.5 pb-1">
+        <div class="w-10 h-1 rounded-full bg-slate-300"></div>
+      </div>
+
+      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="modal-task-title" class="font-bold text-slate-800 text-sm sm:text-base">Schedule New Time Slot</h3>
+        <button id="btn-close-task-modal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95" aria-label="Close">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <form id="form-task" class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
+        <input type="hidden" id="task-id">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Title</label>
+          <input type="text" id="task-input-title" required placeholder="e.g. Deep Work: Review System Specs" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Start Time</label>
+            <input type="time" id="task-input-start" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">End Time</label>
+            <input type="time" id="task-input-end" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Priority</label>
+            <select id="task-input-priority" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+              <option value="High">🔴 High</option>
+              <option value="Medium" selected>🟡 Medium</option>
+              <option value="Low">🟢 Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
+            <select id="task-input-category" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+              <option value="Deep Work">💼 Deep Work</option>
+              <option value="Meeting">📞 Meeting</option>
+              <option value="Health">🏃 Health</option>
+              <option value="Personal">🌱 Personal</option>
+              <option value="Planning">📝 Planning</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Notes / Checklist (Optional)</label>
+          <input type="text" id="task-input-notes" placeholder="e.g. Checklist or mobile reminder note" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="flex items-center gap-2.5 pt-1">
+          <input type="checkbox" id="task-input-recurring" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
+          <label for="task-input-recurring" class="text-xs text-slate-700 font-medium">Save into Repeating Habits bank</label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" id="btn-cancel-task" class="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition active:scale-95">Cancel</button>
+          <button type="submit" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition active:scale-95">Save & Sync</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MODAL: End-of-Day Review -->
+  <div id="modal-review" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 sm:p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-award text-lg"></i>
+            <h3 class="font-bold text-base sm:text-lg">Daily Evening Review</h3>
+          </div>
+          <button id="btn-close-review" class="text-white/80 hover:text-white p-1 rounded-lg">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+        <p class="text-xs text-white/90 mt-1" id="review-date-label">Reflect on accomplishments & prepare tomorrow.</p>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-bold block">Achieved</span>
+            <span id="review-achieved-val" class="text-lg sm:text-xl font-black text-emerald-600">0</span>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-bold block">Missed</span>
+            <span id="review-missed-val" class="text-lg sm:text-xl font-black text-rose-500">0</span>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-bold block">Daily Score</span>
+            <span id="review-score-val" class="text-lg sm:text-xl font-black text-indigo-600">0%</span>
+          </div>
+        </div>
+
+        <div id="review-missed-container" class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Unfinished Tasks</h4>
+          <div id="review-missed-list" class="max-h-36 overflow-y-auto space-y-1.5 text-xs text-slate-600 pr-1">
+            <!-- Unfinished items -->
+          </div>
+          <div class="pt-1">
+            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+              <input type="checkbox" id="check-carryover" checked class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
+              <span>Automatically roll over unfinished tasks to tomorrow</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 flex items-start gap-2.5">
+          <i class="fa-solid fa-bell text-indigo-600 mt-0.5"></i>
+          <p class="text-xs text-indigo-900 leading-relaxed">
+            <b>Consistency Tip:</b> Planning your time blocks tonight guarantees clear momentum tomorrow morning.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button id="btn-cancel-review" class="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition active:scale-95">Cancel</button>
+          <button id="btn-finalize-review" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-100 transition active:scale-95">Finalize Day</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL: Recurring Habits Manager -->
+  <div id="modal-recurring" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
+      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+          <i class="fa-solid fa-repeat text-indigo-600"></i> Master Repeating Habits
+        </h3>
+        <button id="btn-close-recurring" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100" aria-label="Close">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
+        <div class="flex gap-2">
+          <input type="text" id="input-new-habit-title" placeholder="New habit (e.g. 20m Reading)" class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="time" id="input-new-habit-time" value="08:00" class="w-24 px-2 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50">
+          <button id="btn-add-habit" class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 active:scale-95 transition">Add</button>
+        </div>
+
+        <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">Your Master Habits Bank</div>
+        <div id="master-habits-list" class="max-h-56 overflow-y-auto space-y-2 pr-1">
+          <!-- Habits items -->
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+          <button id="btn-apply-all-habits" class="flex-1 px-3.5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 active:scale-95 transition">
+            Apply All to Today
+          </button>
+          <button id="btn-done-habits" class="px-4 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 active:scale-95 transition">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL: Passcode / Sync Code Setup with Backup/Restore -->
+  <div id="modal-passcode" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-slate-100 overflow-hidden transform transition-all p-5 sm:p-6 pb-safe">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+          <i class="fa-solid fa-key text-indigo-600"></i> Settings & Sync
+        </h3>
+        <button onclick="DayTracker.closePasscodeModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="py-4 space-y-3.5">
+        <p class="text-[11px] text-slate-500 leading-relaxed">
+          Enter this exact <strong>Passcode</strong> on any mobile or PC to sync your planner in real time.
+        </p>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Your Passcode</label>
+          <div class="flex gap-2">
+            <input type="text" id="input-custom-passcode" placeholder="e.g. ALUVA-2026" class="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 font-mono font-bold tracking-wider text-sm uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <button onclick="DayTracker.generateRandomPasscode()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+              Random
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex flex-col gap-2">
+          <button onclick="DayTracker.applyPasscode()" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition shadow-md shadow-indigo-100 active:scale-95">
+            <i class="fa-solid fa-plug text-xs"></i> Connect Passcode
+          </button>
+          <button onclick="DayTracker.copyPasscode()" class="w-full py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium flex items-center justify-center gap-1.5 transition">
+            <i class="fa-regular fa-copy text-xs"></i> Copy Passcode
+          </button>
+          
+          <div class="w-full h-px bg-slate-100 my-1"></div>
+          
+          <!-- Cloud Push/Pull -->
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="DayTracker.forcePushCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-upload text-indigo-600"></i> Push to Cloud
+            </button>
+            <button onclick="DayTracker.forcePullCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-download text-emerald-600"></i> Pull from Cloud
+            </button>
+          </div>
+          
+          <!-- Local Backup/Restore -->
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="DayTracker.exportBackup()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5" title="Download JSON Backup">
+              <i class="fa-solid fa-file-export text-blue-600"></i> Export Backup
+            </button>
+            <button onclick="document.getElementById('input-backup-file').click()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5" title="Restore JSON Backup">
+              <i class="fa-solid fa-file-import text-amber-600"></i> Restore Backup
+            </button>
+          </div>
+
+          <button id="btn-modal-install-app" class="hidden w-full py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold items-center justify-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-mobile-screen-button text-xs"></i> Install to Home Screen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed top-4 sm:top-auto sm:bottom-5 right-4 sm:right-5 z-50 transform -translate-y-20 sm:translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900/95 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-message">Action synchronized!</span>
+  </div>
+
+  <!-- Hidden File Input for JSON Backup Restore -->
+  <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="DayTracker.importBackup(event)" />
+
+  <!-- ================= UNIVERSAL PASSCODE CLOUD SYNC SCRIPT ================= -->
+  <script>
+    let deferredInstallPrompt = null;
+
+    // Generate crisp vector/canvas icons and inject PWA manifest dynamically
+    (function setupPwaManifest() {
+      try {
+        function createIconDataUrl(size) {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          
+          // Background gradient
+          const grad = ctx.createLinearGradient(0, 0, size, size);
+          grad.addColorStop(0, '#4f46e5');
+          grad.addColorStop(1, '#7c3aed');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(0, 0, size, size, size * 0.22);
+          ctx.fill();
+
+          // Checkmark symbol
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = size * 0.1;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(size * 0.28, size * 0.52);
+          ctx.lineTo(size * 0.44, size * 0.68);
+          ctx.lineTo(size * 0.74, size * 0.35);
+          ctx.stroke();
+
+          return canvas.toDataURL('image/png');
+        }
+
+        const icon192 = createIconDataUrl(192);
+        const icon512 = createIconDataUrl(512);
+
+        const appleIcon = document.getElementById('apple-touch-icon');
+        if (appleIcon) appleIcon.href = icon192;
+
+        const manifestData = {
+          name: "DayTrack Pro - Daily Planner",
+          short_name: "DayTrack",
+          start_url: window.location.href.split('#')[0],
+          display: "standalone",
+          background_color: "#f8fafc",
+          theme_color: "#4f46e5",
+          icons: [
+            { src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+            { src: icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+          ]
+        };
+
+        const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(blob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestUrl;
+        document.head.appendChild(link);
+      } catch (e) {
+        console.warn('PWA manifest generation note:', e);
+      }
+    })();
+
+    // Listen for Chrome's native install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      
+      const btnHeader = document.getElementById('btn-install-app');
+      const btnModal = document.getElementById('btn-modal-install-app');
+      if (btnHeader) {
+        btnHeader.classList.remove('hidden');
+        btnHeader.classList.add('flex');
+      }
+      if (btnModal) {
+        btnModal.classList.remove('hidden');
+        btnModal.classList.add('flex');
+      }
+    });
+
+    async function triggerPwaInstall() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const choiceResult = await deferredInstallPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        const btnHeader = document.getElementById('btn-install-app');
+        const btnModal = document.getElementById('btn-modal-install-app');
+        if (btnHeader) btnHeader.classList.add('hidden');
+        if (btnModal) btnModal.classList.add('hidden');
+      }
+      deferredInstallPrompt = null;
+    }
+
+    const DayTracker = (() => {
+      // Unique sender ID for this browser tab/device to prevent loopback
+      const myClientId = 'client_' + Math.random().toString(36).substring(2, 9);
+      let sseConnection = null;
+      let lastSyncTimestamp = 0;
+      let isBroadcasting = false;
+      let initialPullCompleted = false; // Safety lock for cloud overwrite
+
+      // Passcode setup
+      let currentPasscode = (localStorage.getItem('DAYTRACK_PASSCODE') || 'MY-PLANNER')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]/g, '-');
+
+      const defaultHabits = [
+        { id: 'h1', title: 'Morning Fitness & Mobility', start: '07:00', end: '08:00', priority: 'High', category: 'Health' },
+        { id: 'h2', title: 'Inbox & Daily Priority Block', start: '09:00', end: '09:30', priority: 'Medium', category: 'Planning' },
+        { id: 'h3', title: 'Deep Work Focus Block 1', start: '10:00', end: '12:00', priority: 'High', category: 'Deep Work' },
+        { id: 'h4', title: 'Lunch & Screen Disconnect', start: '13:00', end: '14:00', priority: 'Low', category: 'Personal' },
+        { id: 'h5', title: 'Daily Review & Next Day Plan', start: '20:30', end: '21:00', priority: 'High', category: 'Planning' },
+      ];
+
+      let state = {
+        tasksByDate: {},
+        habits: [...defaultHabits],
+        history: {}
+      };
+
+      let currentDate = getFormattedDate(new Date());
+      let currentFilter = 'all';
+      let chartInstance = null;
+      let chartRange = 'week';
+
+      function getFormattedDate(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function getTopicName() {
+        const cleanCode = currentPasscode.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return `dt_planner_${cleanCode}`;
+      }
+
+      function showToast(msg) {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-message');
+        if (!toast || !toastMsg) return;
+        toastMsg.innerText = msg;
+        toast.classList.remove('-translate-y-20', 'sm:translate-y-20', 'opacity-0');
+        setTimeout(() => {
+          toast.classList.add('-translate-y-20', 'sm:translate-y-20', 'opacity-0');
+        }, 2500);
+      }
+
+      function updateSyncStatus(status) {
+        const statusEl = document.getElementById('cloud-sync-status');
+        const pulseDot = document.getElementById('cloud-pulse-dot');
+        const badgeText = document.getElementById('passcode-display-badge');
+        if (!statusEl || !pulseDot || !badgeText) return;
+
+        badgeText.innerText = `KEY: ${currentPasscode}`;
+
+        if (status === 'syncing') {
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 transition';
+          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
+        } else if (status === 'synced') {
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition hover:bg-emerald-100 shadow-2xs';
+          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+        } else {
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 transition hover:bg-rose-100';
+          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
+        }
+      }
+
+      function loadLocalFallback() {
+        try {
+          const cTasks = localStorage.getItem(`daytrack_tasks_${currentPasscode}`);
+          if (cTasks) state.tasksByDate = JSON.parse(cTasks);
+
+          const cHabits = localStorage.getItem(`daytrack_habits_${currentPasscode}`);
+          if (cHabits) state.habits = JSON.parse(cHabits);
+
+          const cHistory = localStorage.getItem(`daytrack_history_${currentPasscode}`);
+          if (cHistory) state.history = JSON.parse(cHistory);
+        } catch(e) {
+          console.warn('Local storage parse error', e);
+        }
+      }
+
+      function saveLocal() {
+        try {
+          localStorage.setItem(`daytrack_tasks_${currentPasscode}`, JSON.stringify(state.tasksByDate));
+          localStorage.setItem(`daytrack_habits_${currentPasscode}`, JSON.stringify(state.habits));
+          localStorage.setItem(`daytrack_history_${currentPasscode}`, JSON.stringify(state.history));
+        } catch(e) {}
+      }
+
+      // Universal Broadcast over HTTP/CORS
+      async function broadcastStateCloud(force = false) {
+        // SAFETY LOCK 1: Prevent automatic broadcast if cloud state has not yet been polled
+        if (!initialPullCompleted && !force) {
+          console.warn('Safety lock: Cloud broadcast deferred until initial sync check completes.');
+          return;
+        }
+
+        // SAFETY LOCK 2: Never wipe remote data with empty local state unless explicitly forced
+        const totalLocalTasks = Object.values(state.tasksByDate).reduce((acc, list) => acc + (list ? list.length : 0), 0);
+        if (totalLocalTasks === 0 && !force) {
+          console.warn('Safety lock: Prevented broadcasting empty local state over existing cloud data.');
+          return;
+        }
+
+        saveLocal();
+        updateSyncStatus('syncing');
+
+        const topic = getTopicName();
+        const payload = {
+          senderId: myClientId,
+          timestamp: Date.now(),
+          passcode: currentPasscode,
+          tasksByDate: state.tasksByDate,
+          habits: state.habits,
+          history: state.history
+        };
+
+        try {
+          isBroadcasting = true;
+          const res = await fetch(`https://ntfy.sh/${topic}`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+              'Title': 'DayTrackSync',
+              'Tags': 'cloud,sync'
+            }
+          });
+
+          if (res.ok) {
+            lastSyncTimestamp = payload.timestamp;
+            updateSyncStatus('synced');
+          } else {
+            updateSyncStatus('synced');
+          }
+        } catch (err) {
+          console.warn('Sync broadcast warning, saved locally:', err);
+          updateSyncStatus('synced');
+        } finally {
+          setTimeout(() => { isBroadcasting = false; }, 400);
+        }
+      }
+
+      // Pull latest cached state from cloud
+      async function pullLatestFromCloud(silent = false) {
+        updateSyncStatus('syncing');
+        const topic = getTopicName();
+
+        try {
+          const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=all`);
+          if (!res.ok) throw new Error('Poll failed');
+
+          const text = await res.text();
+          const lines = text.trim().split('\n').filter(Boolean);
+
+          let latestRemote = null;
+          for (let i = lines.length - 1; i >= 0; i--) {
+            try {
+              const item = JSON.parse(lines[i]);
+              if (item.event === 'message' && item.message) {
+                const parsed = JSON.parse(item.message);
+                if (parsed && parsed.timestamp && (!latestRemote || parsed.timestamp > latestRemote.timestamp)) {
+                  latestRemote = parsed;
+                }
+              }
+            } catch(e) {}
+          }
+
+          if (latestRemote && latestRemote.timestamp > lastSyncTimestamp) {
+            applyRemoteState(latestRemote);
+            if (!silent) showToast('Latest plan pulled from cloud! ☁️');
+          } else {
+            if (!silent) showToast('Already up to date!');
+          }
+          updateSyncStatus('synced');
+        } catch (err) {
+          console.warn('Initial cloud pull note:', err.message);
+          updateSyncStatus('synced');
+        } finally {
+          // Once the first pull resolves (even if it failed), allow broadcasts
+          initialPullCompleted = true;
+        }
+      }
+
+      function applyRemoteState(remote) {
+        if (!remote) return;
+        lastSyncTimestamp = remote.timestamp;
+        
+        if (remote.tasksByDate) {
+          // Merge dates safely so past days are not erased by partial device caches
+          state.tasksByDate = { ...remote.tasksByDate, ...state.tasksByDate };
+          Object.keys(remote.tasksByDate).forEach(d => {
+            if (!state.tasksByDate[d] || remote.tasksByDate[d].length >= state.tasksByDate[d].length) {
+              state.tasksByDate[d] = remote.tasksByDate[d];
+            }
+          });
+        }
+        if (remote.habits && remote.habits.length > 0) state.habits = remote.habits;
+        if (remote.history) state.history = { ...remote.history, ...state.history };
+
+        saveLocal();
+        renderDayTasks();
+        renderHabitsBank();
+        updateDailyMetrics();
+
+        if (!document.getElementById('view-analytics').classList.contains('hidden')) {
+          renderAnalytics();
+        }
+      }
+
+      // Establish real-time SSE listener
+      function connectRealtimeListener() {
+        if (sseConnection) {
+          sseConnection.close();
+          sseConnection = null;
+        }
+
+        const topic = getTopicName();
+        try {
+          sseConnection = new EventSource(`https://ntfy.sh/${topic}/sse`);
+
+          sseConnection.onopen = () => {
+            updateSyncStatus('synced');
+          };
+
+          sseConnection.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.event === 'message' && data.message) {
+                const remote = JSON.parse(data.message);
+                // Only process updates from other devices / browser tabs
+                if (remote.senderId !== myClientId && remote.timestamp > lastSyncTimestamp) {
+                  applyRemoteState(remote);
+                  showToast('Live updated from paired device! ✨');
+                }
+              }
+            } catch(err) {
+              console.warn('Realtime message parse warning', err);
+            }
+          };
+
+          sseConnection.onerror = () => {
+            updateSyncStatus('syncing');
+          };
+        } catch(e) {
+          console.warn('SSE connection init error', e);
+        }
+      }
+
+      function renderDayTasks() {
+        const dayTasks = state.tasksByDate[currentDate] || [];
+        const taskListEl = document.getElementById('task-list');
+        const emptyStateEl = document.getElementById('empty-state');
+        
+        taskListEl.innerHTML = '';
+
+        dayTasks.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+
+        const filteredTasks = dayTasks.filter(task => {
+          if (currentFilter === 'pending') return !task.completed;
+          if (currentFilter === 'completed') return task.completed;
+          return true;
+        });
+
+        if (dayTasks.length === 0) {
+          emptyStateEl.classList.remove('hidden');
+          emptyStateEl.classList.add('flex');
+        } else {
+          emptyStateEl.classList.add('hidden');
+          emptyStateEl.classList.remove('flex');
+        }
+
+        filteredTasks.forEach(task => {
+          const card = document.createElement('div');
+          card.className = `p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 transition-all active:bg-slate-50/80 ${task.completed ? 'bg-slate-50/70 border-slate-200' : ''}`;
+          
+          const priorityStyles = {
+            High: 'bg-rose-50 text-rose-700 border-rose-200',
+            Medium: 'bg-amber-50 text-amber-700 border-amber-200',
+            Low: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          };
+          const badgeClass = priorityStyles[task.priority] || priorityStyles.Medium;
+
+          card.innerHTML = `
+            <div class="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0">
+              <button onclick="DayTracker.toggleTask('${task.id}')" class="w-11 h-11 flex-shrink-0 flex items-center justify-center -ml-1 rounded-xl active:scale-90 transition-transform" aria-label="Toggle Complete">
+                <div class="w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'border-slate-300 bg-white hover:border-indigo-400 text-transparent'}">
+                  <i class="fa-solid fa-check text-xs"></i>
+                </div>
+              </button>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                  <span class="text-[11px] sm:text-xs font-bold text-slate-800 flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-slate-400 text-[10px]"></i>
+                    ${task.start} – ${task.end}
+                  </span>
+                  <span class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-semibold border ${badgeClass}">${task.priority}</span>
+                  <span class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-slate-100 text-slate-600">${task.category || 'General'}</span>
+                  ${task.isRecurring ? '<span class="text-[9px] text-indigo-600 flex items-center gap-1 font-medium"><i class="fa-solid fa-repeat text-[8px]"></i> Habit</span>' : ''}
+                </div>
+                <h4 class="text-xs sm:text-sm font-semibold text-slate-900 truncate leading-snug ${task.completed ? 'task-completed text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
+                ${task.notes ? `<p class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtml(task.notes)}</p>` : ''}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button onclick="DayTracker.editTask('${task.id}')" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-100 active:scale-90 transition" title="Edit">
+                <i class="fa-solid fa-pen-to-square text-xs"></i>
+              </button>
+              <button onclick="DayTracker.deleteTask('${task.id}')" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-slate-100 active:scale-90 transition" title="Delete">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
+          `;
+          taskListEl.appendChild(card);
+        });
+
+        updateDailyMetrics();
+      }
+
+      function updateDailyMetrics() {
+        const dayTasks = state.tasksByDate[currentDate] || [];
+        const total = dayTasks.length;
+        const achieved = dayTasks.filter(t => t.completed).length;
+        const rate = total === 0 ? 0 : Math.round((achieved / total) * 100);
+
+        document.getElementById('stat-achieved-count').innerText = achieved;
+        document.getElementById('stat-total-count').innerText = total;
+        document.getElementById('stat-rate').innerText = `${rate}%`;
+        document.getElementById('progress-percentage-label').innerText = `${rate}%`;
+        document.getElementById('progress-bar-fill').style.width = `${rate}%`;
+
+        const subtext = document.getElementById('progress-subtext');
+        if (total === 0) {
+          subtext.innerText = 'No tasks scheduled yet. Start scheduling your morning and afternoon blocks.';
+        } else if (rate === 100) {
+          subtext.innerText = '🎉 Outstanding! All scheduled slots completed!';
+        } else {
+          subtext.innerText = `${achieved} of ${total} slots achieved. Real-time synced to passcode.`;
+        }
+
+        const streak = calculateStreak();
+        document.getElementById('stat-streak').innerText = `${streak}d`;
+        document.getElementById('kpi-streak').innerText = `${streak} Days`;
+      }
+
+      function calculateStreak() {
+        let streak = 0;
+        let d = new Date();
+        
+        for (let i = 0; i < 365; i++) {
+          const dateStr = getFormattedDate(d);
+          const tasks = state.tasksByDate[dateStr] || [];
+          const record = state.history[dateStr];
+          
+          const wasSuccessful = (record && record.rate >= 60) || (tasks.length > 0 && (tasks.filter(t => t.completed).length / tasks.length) >= 0.6);
+          if (wasSuccessful) {
+            streak++;
+          } else {
+            if (i === 0 && tasks.length === 0) {
+              // Day in progress
+            } else {
+              break;
+            }
+          }
+          d.setDate(d.getDate() - 1);
+        }
+        return streak;
+      }
+
+      function toggleTask(id) {
+        const dayTasks = state.tasksByDate[currentDate] || [];
+        const task = dayTasks.find(t => t.id === id);
+        if (task) {
+          task.completed = !task.completed;
+          renderDayTasks();
+          broadcastStateCloud();
+
+          if (task.completed) {
+            try {
+              confetti({
+                particleCount: 30,
+                spread: 50,
+                origin: { y: 0.75 },
+                colors: ['#6366f1', '#10b981', '#f59e0b']
+              });
+            } catch(e) {}
+            showToast('Time slot achieved! Synced ✨');
+          }
+        }
+      }
+
+      function deleteTask(id) {
+        let dayTasks = state.tasksByDate[currentDate] || [];
+        state.tasksByDate[currentDate] = dayTasks.filter(t => t.id !== id);
+        renderDayTasks();
+        broadcastStateCloud();
+        showToast('Task removed.');
+      }
+
+      function openTaskModal(editId = null) {
+        const modal = document.getElementById('modal-task');
+        const modalTitle = document.getElementById('modal-task-title');
+        const form = document.getElementById('form-task');
+        form.reset();
+
+        if (editId) {
+          modalTitle.innerText = 'Edit Time Slot';
+          const task = (state.tasksByDate[currentDate] || []).find(t => t.id === editId);
+          if (task) {
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-input-title').value = task.title;
+            document.getElementById('task-input-start').value = task.start;
+            document.getElementById('task-input-end').value = task.end;
+            document.getElementById('task-input-priority').value = task.priority;
+            document.getElementById('task-input-category').value = task.category;
+            document.getElementById('task-input-notes').value = task.notes || '';
+            document.getElementById('task-input-recurring').checked = !!task.isRecurring;
+          }
+        } else {
+          modalTitle.innerText = 'Schedule New Time Slot';
+          document.getElementById('task-id').value = '';
+          const now = new Date();
+          const curHours = String(now.getHours()).padStart(2, '0');
+          const nextHours = String((now.getHours() + 1) % 24).padStart(2, '0');
+          document.getElementById('task-input-start').value = `${curHours}:00`;
+          document.getElementById('task-input-end').value = `${nextHours}:00`;
+        }
+
+        modal.classList.remove('hidden');
+      }
+
+      function closeTaskModal() {
+        document.getElementById('modal-task').classList.add('hidden');
+      }
+
+      function handleSaveTask(e) {
+        e.preventDefault();
+        const id = document.getElementById('task-id').value;
+        const title = document.getElementById('task-input-title').value.trim();
+        const start = document.getElementById('task-input-start').value;
+        const end = document.getElementById('task-input-end').value;
+        const priority = document.getElementById('task-input-priority').value;
+        const category = document.getElementById('task-input-category').value;
+        const notes = document.getElementById('task-input-notes').value.trim();
+        const isRecurring = document.getElementById('task-input-recurring').checked;
+
+        if (!title || !start || !end) return;
+
+        if (!state.tasksByDate[currentDate]) {
+          state.tasksByDate[currentDate] = [];
+        }
+
+        if (id) {
+          const index = state.tasksByDate[currentDate].findIndex(t => t.id === id);
+          if (index !== -1) {
+            state.tasksByDate[currentDate][index] = {
+              ...state.tasksByDate[currentDate][index],
+              title, start, end, priority, category, notes, isRecurring
+            };
+          }
+        } else {
+          const newTask = {
+            id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
+            title, start, end, priority, category, notes,
+            completed: false,
+            isRecurring
+          };
+          state.tasksByDate[currentDate].push(newTask);
+
+          if (isRecurring) {
+            if (!state.habits.some(h => h.title.toLowerCase() === title.toLowerCase())) {
+              state.habits.push({ id: 'h_' + Date.now(), title, start, end, priority, category });
+              renderHabitsBank();
+            }
+          }
+        }
+
+        closeTaskModal();
+        renderDayTasks();
+        broadcastStateCloud();
+        showToast('Saved & live synced!');
+      }
+
+      function renderHabitsBank() {
+        const container = document.getElementById('quick-habits-container');
+        const masterList = document.getElementById('master-habits-list');
+
+        container.innerHTML = '';
+        masterList.innerHTML = '';
+
+        state.habits.forEach(habit => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-between text-xs transition active:scale-98 group';
+          item.innerHTML = `
+            <div class="truncate">
+              <span class="font-semibold text-slate-800">${escapeHtml(habit.title)}</span>
+              <span class="text-[10px] text-slate-400 block">${habit.start} - ${habit.end} • ${habit.category}</span>
+            </div>
+            <i class="fa-solid fa-plus text-slate-400 group-hover:text-indigo-600 transition flex-shrink-0 text-xs"></i>
+          `;
+          item.onclick = () => injectHabitToDay(habit);
+          container.appendChild(item);
+
+          const mItem = document.createElement('div');
+          mItem.className = 'p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs bg-slate-50/60';
+          mItem.innerHTML = `
+            <div class="truncate mr-2">
+              <p class="font-bold text-slate-800 truncate">${escapeHtml(habit.title)}</p>
+              <p class="text-[11px] text-slate-500">${habit.start} - ${habit.end} (${habit.priority})</p>
+            </div>
+            <button onclick="DayTracker.deleteHabit('${habit.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-xl active:scale-95 transition" title="Delete Habit">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          `;
+          masterList.appendChild(mItem);
+        });
+      }
+
+      function injectHabitToDay(habit) {
+        if (!state.tasksByDate[currentDate]) state.tasksByDate[currentDate] = [];
+        
+        state.tasksByDate[currentDate].push({
+          id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
+          title: habit.title,
+          start: habit.start,
+          end: habit.end,
+          priority: habit.priority,
+          category: habit.category,
+          notes: 'Repeating habit',
+          completed: false,
+          isRecurring: true
+        });
+
+        renderDayTasks();
+        broadcastStateCloud();
+        showToast(`Added "${habit.title}"`);
+      }
+
+      function applyDefaultRecurring() {
+        if (!state.tasksByDate[currentDate]) state.tasksByDate[currentDate] = [];
+
+        state.habits.forEach(h => {
+          const exists = state.tasksByDate[currentDate].some(t => t.title.toLowerCase() === h.title.toLowerCase());
+          if (!exists) {
+            state.tasksByDate[currentDate].push({
+              id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
+              title: h.title,
+              start: h.start,
+              end: h.end,
+              priority: h.priority,
+              category: h.category,
+              notes: 'Daily routine template',
+              completed: false,
+              isRecurring: true
+            });
+          }
+        });
+
+        renderDayTasks();
+        broadcastStateCloud();
+        showToast('Applied recurring habits!');
+      }
+
+      function deleteHabit(habitId) {
+        state.habits = state.habits.filter(h => h.id !== habitId);
+        renderHabitsBank();
+        broadcastStateCloud();
+      }
+
+      function openEndDayReview() {
+        const dayTasks = state.tasksByDate[currentDate] || [];
+        const total = dayTasks.length;
+        const achieved = dayTasks.filter(t => t.completed).length;
+        const missed = dayTasks.filter(t => !t.completed);
+        const rate = total === 0 ? 0 : Math.round((achieved / total) * 100);
+
+        document.getElementById('review-date-label').innerText = `Daily Performance Review (${currentDate})`;
+        document.getElementById('review-achieved-val').innerText = achieved;
+        document.getElementById('review-missed-val').innerText = missed.length;
+        document.getElementById('review-score-val').innerText = `${rate}%`;
+
+        const missedList = document.getElementById('review-missed-list');
+        missedList.innerHTML = '';
+        if (missed.length === 0) {
+          missedList.innerHTML = '<p class="text-emerald-600 font-bold text-xs py-2">✨ 100% Achieved! Every planned slot is finished.</p>';
+        } else {
+          missed.forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-2 rounded-xl bg-rose-50/70 border border-rose-100';
+            row.innerHTML = `
+              <span class="font-medium text-slate-800 truncate">${escapeHtml(m.title)}</span>
+              <span class="text-[10px] text-rose-600 font-bold ml-2">${m.start}</span>
+            `;
+            missedList.appendChild(row);
+          });
+        }
+
+        document.getElementById('modal-review').classList.remove('hidden');
+      }
+
+      function finalizeReview() {
+        const dayTasks = state.tasksByDate[currentDate] || [];
+        const total = dayTasks.length;
+        const achieved = dayTasks.filter(t => t.completed).length;
+        const rate = total === 0 ? 0 : Math.round((achieved / total) * 100);
+
+        state.history[currentDate] = {
+          date: currentDate,
+          total,
+          achieved,
+          rate,
+          timestamp: Date.now()
+        };
+
+        const shouldCarryover = document.getElementById('check-carryover').checked;
+        if (shouldCarryover) {
+          const missed = dayTasks.filter(t => !t.completed);
+          if (missed.length > 0) {
+            const nextDateObj = new Date(currentDate + 'T00:00:00');
+            nextDateObj.setDate(nextDateObj.getDate() + 1);
+            const tomorrowStr = getFormattedDate(nextDateObj);
+
+            if (!state.tasksByDate[tomorrowStr]) state.tasksByDate[tomorrowStr] = [];
+            missed.forEach(m => {
+              state.tasksByDate[tomorrowStr].push({
+                ...m,
+                id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
+                notes: (m.notes ? m.notes + ' • ' : '') + 'Carried over from ' + currentDate,
+                completed: false
+              });
+            });
+          }
+        }
+
+        broadcastStateCloud();
+        document.getElementById('modal-review').classList.add('hidden');
+        showToast('Day saved & archived to analytics!');
+        updateDailyMetrics();
+      }
+
+      function renderAnalytics() {
+        let totalAchievedCount = 0;
+        let totalFocusMinutes = 0;
+
+        Object.keys(state.tasksByDate).forEach(d => {
+          (state.tasksByDate[d] || []).forEach(task => {
+            if (task.completed) {
+              totalAchievedCount++;
+              if (task.start && task.end) {
+                const [sh, sm] = task.start.split(':').map(Number);
+                const [eh, em] = task.end.split(':').map(Number);
+                const diff = (eh * 60 + em) - (sh * 60 + sm);
+                if (diff > 0) totalFocusMinutes += diff;
+              }
+            }
+          });
+        });
+
+        document.getElementById('kpi-total-achieved').innerText = totalAchievedCount;
+        document.getElementById('kpi-focus-hours').innerText = `${Math.round(totalFocusMinutes / 60)}h`;
+
+        const labels = [];
+        const dataScores = [];
+        const daysToInspect = chartRange === 'week' ? 7 : 30;
+
+        const baseDate = new Date();
+        for (let i = daysToInspect - 1; i >= 0; i--) {
+          const d = new Date(baseDate);
+          d.setDate(baseDate.getDate() - i);
+          const dStr = getFormattedDate(d);
+          
+          if (chartRange === 'week') {
+            labels.push(d.toLocaleDateString('en-US', { weekday: 'narrow', month: 'numeric', day: 'numeric' }));
+          } else {
+            labels.push(d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }));
+          }
+
+          if (state.history[dStr]) {
+            dataScores.push(state.history[dStr].rate);
+          } else if (state.tasksByDate[dStr] && state.tasksByDate[dStr].length > 0) {
+            const count = state.tasksByDate[dStr].length;
+            const done = state.tasksByDate[dStr].filter(t => t.completed).length;
+            dataScores.push(Math.round((done / count) * 100));
+          } else {
+            dataScores.push(0);
+          }
+        }
+
+        const nonZeroScores = dataScores.filter(s => s > 0);
+        const avgScore = nonZeroScores.length ? Math.round(nonZeroScores.reduce((a,b)=>a+b,0) / nonZeroScores.length) : 0;
+        document.getElementById('kpi-weekly-avg').innerText = `${avgScore}%`;
+
+        const ctx = document.getElementById('achievementChart').getContext('2d');
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+
+        document.getElementById('chart-main-title').innerText = chartRange === 'week' 
+          ? '7-Day Completion Rate (%)' 
+          : '30-Day Completion Trend (%)';
+
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Achievement %',
+              data: dataScores,
+              backgroundColor: dataScores.map(val => val >= 80 ? 'rgba(99, 102, 241, 0.9)' : 'rgba(165, 180, 252, 0.8)'),
+              hoverBackgroundColor: '#4f46e5',
+              borderRadius: 6,
+              borderSkipped: false,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => ` Achieved: ${context.parsed.y}%`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                  callback: (value) => value + '%',
+                  font: { family: 'Inter', size: 10 }
+                },
+                grid: { color: 'rgba(226, 232, 240, 0.6)' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { font: { family: 'Inter', size: 9 }, maxRotation: 0 }
+              }
+            }
+          }
+        });
+      }
+
+      function exportBackup() {
+        const payload = {
+          version: '2.0',
+          passcode: currentPasscode,
+          exportedAt: new Date().toISOString(),
+          tasksByDate: state.tasksByDate,
+          habits: state.habits,
+          history: state.history
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `DayTrack_Backup_${currentDate}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Backup file downloaded! 💾');
+      }
+
+      function importBackup(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (data && (data.tasksByDate || data.tasks)) {
+              const incomingTasks = data.tasksByDate || data.tasks;
+              state.tasksByDate = { ...state.tasksByDate, ...incomingTasks };
+              if (data.habits && Array.isArray(data.habits)) {
+                state.habits = data.habits;
+              }
+              if (data.history) {
+                state.history = { ...state.history, ...data.history };
+              }
+              if (data.passcode) {
+                currentPasscode = data.passcode.toUpperCase().replace(/[^A-Z0-9_-]/g, '-');
+                localStorage.setItem('DAYTRACK_PASSCODE', currentPasscode);
+              }
+              saveLocal();
+              renderDayTasks();
+              renderHabitsBank();
+              broadcastStateCloud(true);
+              showToast('Backup restored successfully! ✨');
+            } else {
+              showToast('Invalid backup file format.');
+            }
+          } catch (err) {
+            console.error('Import error:', err);
+            showToast('Failed to parse backup file.');
+          }
+          event.target.value = ''; // Reset input
+        };
+        reader.readAsText(file);
+      }
+
+      function openPasscodeModal() {
+        const input = document.getElementById('input-custom-passcode');
+        if (input) input.value = currentPasscode;
+        document.getElementById('modal-passcode').classList.remove('hidden');
+      }
+
+      function closePasscodeModal() {
+        document.getElementById('modal-passcode').classList.add('hidden');
+      }
+
+      function generateRandomPasscode() {
+        const rand = 'DAY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+        document.getElementById('input-custom-passcode').value = rand;
+      }
+
+      function applyPasscode() {
+        const input = document.getElementById('input-custom-passcode');
+        const newCode = (input.value || '')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9_-]/g, '-');
+
+        if (!newCode) {
+          showToast('Please enter a valid passcode.');
+          return;
+        }
+
+        currentPasscode = newCode;
+        localStorage.setItem('DAYTRACK_PASSCODE', currentPasscode);
+        closePasscodeModal();
+
+        loadLocalFallback();
+        renderDayTasks();
+        renderHabitsBank();
+
+        pullLatestFromCloud(true);
+        connectRealtimeListener();
+
+        showToast(`Connected to passcode "${currentPasscode}"`);
+      }
+
+      function copyPasscode() {
+        const temp = document.createElement('textarea');
+        temp.value = currentPasscode;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+          showToast('Passcode copied!');
+        } catch(e) {}
+        document.body.removeChild(temp);
+      }
+
+      function forcePushCloud() {
+        broadcastStateCloud(true);
+        showToast('Local tasks pushed to cloud! 🚀');
+      }
+
+      function forcePullCloud() {
+        pullLatestFromCloud(false);
+      }
+
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.innerText = text;
+        return div.innerHTML;
+      }
+
+      function init() {
+        const datePicker = document.getElementById('date-picker');
+        datePicker.value = currentDate;
+
+        datePicker.addEventListener('change', (e) => {
+          currentDate = e.target.value;
+          renderDayTasks();
+        });
+
+        document.getElementById('btn-prev-day').addEventListener('click', () => {
+          const d = new Date(currentDate + 'T00:00:00');
+          d.setDate(d.getDate() - 1);
+          currentDate = getFormattedDate(d);
+          datePicker.value = currentDate;
+          renderDayTasks();
+        });
+
+        document.getElementById('btn-next-day').addEventListener('click', () => {
+          const d = new Date(currentDate + 'T00:00:00');
+          d.setDate(d.getDate() + 1);
+          currentDate = getFormattedDate(d);
+          datePicker.value = currentDate;
+          renderDayTasks();
+        });
+
+        document.getElementById('btn-today').addEventListener('click', () => {
+          currentDate = getFormattedDate(new Date());
+          datePicker.value = currentDate;
+          renderDayTasks();
+        });
+
+        document.getElementById('btn-plan-tomorrow').addEventListener('click', () => {
+          const d = new Date();
+          d.setDate(d.getDate() + 1);
+          currentDate = getFormattedDate(d);
+          datePicker.value = currentDate;
+          renderDayTasks();
+          showToast('Viewing tomorrow! Plan your day ahead.');
+        });
+
+        const tabPlanner = document.getElementById('tab-btn-planner');
+        const tabAnalytics = document.getElementById('tab-btn-analytics');
+        const viewPlanner = document.getElementById('view-planner');
+        const viewAnalytics = document.getElementById('view-analytics');
+
+        const switchToPlanner = () => {
+          tabPlanner.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
+          tabAnalytics.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
+          viewPlanner.classList.remove('hidden');
+          viewAnalytics.classList.add('hidden');
+          document.getElementById('nav-btn-tasks').className = 'flex flex-col items-center justify-center gap-1 text-indigo-600';
+          document.getElementById('nav-btn-analytics').className = 'flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700';
+        };
+
+        const switchToAnalytics = () => {
+          tabAnalytics.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
+          tabPlanner.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
+          viewPlanner.classList.add('hidden');
+          viewAnalytics.classList.remove('hidden');
+          document.getElementById('nav-btn-analytics').className = 'flex flex-col items-center justify-center gap-1 text-indigo-600';
+          document.getElementById('nav-btn-tasks').className = 'flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700';
+          renderAnalytics();
+        };
+
+        tabPlanner.addEventListener('click', switchToPlanner);
+        tabAnalytics.addEventListener('click', switchToAnalytics);
+
+        document.getElementById('nav-btn-tasks').addEventListener('click', switchToPlanner);
+        document.getElementById('nav-btn-analytics').addEventListener('click', switchToAnalytics);
+        document.getElementById('nav-btn-habits').addEventListener('click', () => {
+          renderHabitsBank();
+          document.getElementById('modal-recurring').classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => {
+              b.className = 'filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition';
+            });
+            btn.className = 'filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition';
+            currentFilter = btn.dataset.filter;
+            renderDayTasks();
+          });
+        });
+
+        document.getElementById('fab-add-task').addEventListener('click', () => openTaskModal());
+        document.getElementById('btn-desktop-add-task').addEventListener('click', () => openTaskModal());
+        document.getElementById('btn-close-task-modal').addEventListener('click', closeTaskModal);
+        document.getElementById('btn-cancel-task').addEventListener('click', closeTaskModal);
+        document.getElementById('form-task').addEventListener('submit', handleSaveTask);
+
+        document.getElementById('btn-end-day').addEventListener('click', openEndDayReview);
+        document.getElementById('btn-close-review').addEventListener('click', () => document.getElementById('modal-review').classList.add('hidden'));
+        document.getElementById('btn-cancel-review').addEventListener('click', () => document.getElementById('modal-review').classList.add('hidden'));
+        document.getElementById('btn-finalize-review').addEventListener('click', finalizeReview);
+
+        const modalHabits = document.getElementById('modal-recurring');
+        const openHabitsHandler = () => {
+          renderHabitsBank();
+          modalHabits.classList.remove('hidden');
+        };
+        document.getElementById('btn-open-templates').addEventListener('click', openHabitsHandler);
+        document.getElementById('btn-edit-recurring-list').addEventListener('click', openHabitsHandler);
+        document.getElementById('btn-close-recurring').addEventListener('click', () => modalHabits.classList.add('hidden'));
+        document.getElementById('btn-done-habits').addEventListener('click', () => modalHabits.classList.add('hidden'));
+
+        document.getElementById('btn-add-habit').addEventListener('click', () => {
+          const title = document.getElementById('input-new-habit-title').value.trim();
+          const start = document.getElementById('input-new-habit-time').value;
+          if (!title) return;
+          state.habits.push({
+            id: 'h_' + Date.now(),
+            title,
+            start: start || '08:00',
+            end: '09:00',
+            priority: 'Medium',
+            category: 'Personal'
+          });
+          renderHabitsBank();
+          broadcastStateCloud();
+          document.getElementById('input-new-habit-title').value = '';
+          showToast('Habit added to master bank!');
+        });
+
+        document.getElementById('btn-apply-all-habits').addEventListener('click', () => {
+          applyDefaultRecurring();
+          modalHabits.classList.add('hidden');
+        });
+
+        const btnWeek = document.getElementById('chart-toggle-week');
+        const btnMonth = document.getElementById('chart-toggle-month');
+        btnWeek.addEventListener('click', () => {
+          chartRange = 'week';
+          btnWeek.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs';
+          btnMonth.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900';
+          renderAnalytics();
+        });
+        btnMonth.addEventListener('click', () => {
+          chartRange = 'month';
+          btnMonth.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs';
+          btnWeek.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900';
+          renderAnalytics();
+        });
+
+        // Bind PWA Install triggers
+        const btnInstallHeader = document.getElementById('btn-install-app');
+        const btnInstallModal = document.getElementById('btn-modal-install-app');
+        if (btnInstallHeader) btnInstallHeader.addEventListener('click', triggerPwaInstall);
+        if (btnInstallModal) btnInstallModal.addEventListener('click', triggerPwaInstall);
+
+        // Auto-reconnect on network return
+        window.addEventListener('online', () => {
+          pullLatestFromCloud(true);
+          connectRealtimeListener();
+        });
+
+        // Initialize state
+        loadLocalFallback();
+        if (!state.tasksByDate[currentDate] || state.tasksByDate[currentDate].length === 0) {
+          state.tasksByDate[currentDate] = defaultHabits.map(h => ({
+            ...h,
+            id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
+            completed: false,
+            notes: 'Master daily habit',
+            isRecurring: true
+          }));
+          saveLocal();
+        }
+
+        renderDayTasks();
+        renderHabitsBank();
+        pullLatestFromCloud(true);
+        connectRealtimeListener();
+      }
+
+      return {
+        init,
+        toggleTask,
+        deleteTask,
+        editTask: (id) => openTaskModal(id),
+        openTaskModal: () => openTaskModal(),
+        openPasscodeModal,
+        closePasscodeModal,
+        generateRandomPasscode,
+        applyPasscode,
+        copyPasscode,
+        forcePushCloud,
+        forcePullCloud,
+        exportBackup,
+        importBackup,
+        deleteHabit,
+        applyDefaultRecurring
+      };
+    })();
+
+    window.DayTracker = DayTracker;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      DayTracker.init();
+    });
+  </script>
+</body>
+</html>
