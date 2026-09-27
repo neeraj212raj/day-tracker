@@ -557,7 +557,7 @@
   <!-- Hidden File Input for JSON Backup Restore -->
   <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="DayTracker.importBackup(event)" />
 
-  <!-- ================= UNIFIED CROSS-DEVICE ENGINE ================= -->
+  <!-- ================= UNIFIED CROSS-DEVICE ENGINE (FIXED) ================= -->
   <script>
     let deferredInstallPrompt = null;
 
@@ -745,7 +745,6 @@
         } catch(e) {}
       }
 
-      // Sends simple standard POST without custom headers to avoid CORS preflight blocks
       async function sendCloudPayload(payload) {
         updateSyncStatus('syncing');
         const topic = getTopicName();
@@ -765,7 +764,7 @@
         return false;
       }
 
-      // Synchronizes the entire calendar state or individual date safely
+      // FIX: Always broadcast FULL STATE to all devices for all dates
       async function broadcastFullState() {
         saveLocal();
         const payload = {
@@ -779,11 +778,26 @@
         };
 
         const jsonStr = JSON.stringify(payload);
+        
+        // If small enough, send entire state as one message
         if (jsonStr.length < 3900) {
           await sendCloudPayload(payload);
         } else {
-          // If state is very large, broadcast each active calendar date with small safety delays
-          const dates = Object.keys(state.tasksByDate);
+          // If too large, split by date but send ALL dates individually to reconstruct on other devices
+          console.log('State large, broadcasting each date individually...');
+          const dates = Object.keys(state.tasksByDate).sort();
+          
+          // First send habits and history as a separate message
+          await sendCloudPayload({
+            type: 'metadata_sync',
+            senderId: myClientId,
+            timestamp: Date.now(),
+            passcode: currentPasscode,
+            habits: state.habits,
+            history: state.history
+          });
+          
+          // Then send each date's tasks
           for (const d of dates) {
             await sendCloudPayload({
               type: 'date_sync',
@@ -793,14 +807,16 @@
               date: d,
               tasks: state.tasksByDate[d] || []
             });
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 150));
           }
         }
       }
 
+      // FIX: When syncing a single date, ALWAYS broadcast full state if possible
       async function broadcastDateSync(dateStr) {
         saveLocal();
-        // If whole state is small, sync entire calendar so other devices receive all upcoming dates
+        
+        // Always try to send complete state first
         const fullPayload = {
           type: 'full_sync',
           senderId: myClientId,
@@ -810,9 +826,23 @@
           habits: state.habits,
           history: state.history
         };
-        if (JSON.stringify(fullPayload).length < 3900) {
+        
+        const jsonStr = JSON.stringify(fullPayload);
+        
+        if (jsonStr.length < 3900) {
+          // Send full state if it fits
           await sendCloudPayload(fullPayload);
         } else {
+          // If full state is large, send metadata + this specific date
+          await sendCloudPayload({
+            type: 'metadata_sync',
+            senderId: myClientId,
+            timestamp: Date.now(),
+            passcode: currentPasscode,
+            habits: state.habits,
+            history: state.history
+          });
+          
           await sendCloudPayload({
             type: 'date_sync',
             senderId: myClientId,
@@ -835,21 +865,33 @@
           lastSyncTimestamp = packet.timestamp;
         }
 
-        if (packet.type === 'full_sync' || packet.tasksByDate) {
-          if (packet.tasksByDate) {
-            state.tasksByDate = { ...state.tasksByDate, ...packet.tasksByDate };
-          }
+        // Handle full state sync
+        if (packet.type === 'full_sync' && packet.tasksByDate) {
+          state.tasksByDate = { ...packet.tasksByDate };
           if (packet.habits && Array.isArray(packet.habits) && packet.habits.length > 0) {
             state.habits = packet.habits;
           }
           if (packet.history) {
-            state.history = { ...state.history, ...packet.history };
+            state.history = packet.history;
           }
           saveLocal();
           renderDayTasks();
           renderHabitsBank();
           updateDailyMetrics();
-        } else if (packet.type === 'date_sync' && packet.date) {
+        }
+        // Handle metadata sync (habits and history without tasks)
+        else if (packet.type === 'metadata_sync') {
+          if (packet.habits && Array.isArray(packet.habits) && packet.habits.length > 0) {
+            state.habits = packet.habits;
+          }
+          if (packet.history) {
+            state.history = packet.history;
+          }
+          saveLocal();
+          renderHabitsBank();
+        }
+        // Handle individual date sync
+        else if (packet.type === 'date_sync' && packet.date) {
           state.tasksByDate[packet.date] = packet.tasks || [];
           saveLocal();
           if (currentDate === packet.date) {
@@ -864,13 +906,11 @@
         }
       }
 
-      // Robust poll that never fails on bad syntax
       async function pullLatestFromCloud(silent = false) {
         updateSyncStatus('syncing');
         const topic = getTopicName();
 
         try {
-          // Poll the queue without invalid duration tokens
           const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1`);
           if (!res.ok) throw new Error('Poll failed');
 
@@ -901,7 +941,6 @@
         }
       }
 
-      // Self-healing SSE connection with automatic retry
       function connectRealtimeListener() {
         if (reconnectTimer) {
           clearTimeout(reconnectTimer);
@@ -1158,7 +1197,6 @@
         }
 
         if (id) {
-          // If task moved to a different calendar date, delete from old date
           if (taskDate !== currentDate && state.tasksByDate[currentDate]) {
             state.tasksByDate[currentDate] = state.tasksByDate[currentDate].filter(t => t.id !== id);
           }
@@ -1194,7 +1232,6 @@
 
         closeTaskModal();
         
-        // If saved to currently active date view, update the list
         if (currentDate === taskDate) {
           renderDayTasks();
         } else {
@@ -1595,7 +1632,6 @@
         const datePicker = document.getElementById('date-picker');
         datePicker.value = currentDate;
 
-        // Instant reactivity across months and calendar picker inputs
         ['change', 'input'].forEach(evt => {
           datePicker.addEventListener(evt, (e) => {
             if (e.target.value) {
@@ -1747,7 +1783,6 @@
         if (btnInstallHeader) btnInstallHeader.addEventListener('click', triggerPwaInstall);
         if (btnInstallModal) btnInstallModal.addEventListener('click', triggerPwaInstall);
 
-        // Immediate background sync on tab switch or phone wake
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'visible') {
             pullLatestFromCloud(true);
