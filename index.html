@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Daily Task Tracker & Planner</title>
+  <title>DayTrack Pro & Office Manager</title>
   
   <!-- PWA & Mobile Web App Meta Tags -->
-  <meta name="theme-color" content="#4f46e5" />
+  <meta name="theme-color" content="#1e293b" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="DayTrack Pro" />
   <link rel="apple-touch-icon" id="apple-touch-icon" />
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js for Weekly & Monthly Analytics -->
+  <!-- Chart.js for Analytics & Budget Breakdown -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -31,9 +31,7 @@
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
           colors: {
             brand: {
               50: '#eef2ff',
@@ -41,6 +39,13 @@
               500: '#6366f1',
               600: '#4f46e5',
               700: '#4338ca',
+            },
+            office: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              600: '#2563eb',
+              800: '#1e293b',
+              900: '#0f172a'
             }
           }
         }
@@ -56,309 +61,596 @@
     }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 9999px; }
-    .task-completed {
-      text-decoration: line-through;
-      opacity: 0.6;
+    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 9999px; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1.25rem); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0.5rem); }
+    
+    .view-transition {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom, 1.25rem);
+    .task-card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .pt-safe {
-      padding-top: env(safe-area-inset-top, 0.5rem);
+    .task-card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    }
+    .calendar-day-box {
+      aspect-ratio: 1;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
     }
     @media (max-width: 640px) {
       .bottom-sheet-drawer {
         border-bottom-left-radius: 0px !important;
         border-bottom-right-radius: 0px !important;
-        max-height: 90vh;
+        max-height: 92vh;
       }
     }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-  <!-- Desktop & Mobile Header Bar with Live Passcode Sync Badge -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 pt-safe">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-      <div class="flex items-center gap-2.5 sm:gap-3">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 flex-shrink-0">
-          <i class="fa-solid fa-list-check text-sm sm:text-base"></i>
+  <!-- ================= TOP APP BAR ================= -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 pt-safe">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+      
+      <!-- Logo & Sync Pill -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div id="app-logo-badge" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md flex-shrink-0 cursor-pointer" onclick="App.openPasscodeModal()">
+          <i id="app-logo-icon" class="fa-solid fa-list-check text-sm sm:text-base"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="font-bold text-base sm:text-lg leading-tight tracking-tight text-slate-800">DayTrack Pro</h1>
+            <h1 id="app-main-title" class="font-bold text-sm sm:text-lg leading-tight tracking-tight text-white flex items-center gap-1.5">
+              <span>DayTrack</span><span class="text-indigo-400 font-extrabold" id="app-title-suffix">Pro</span>
+            </h1>
             
             <!-- Passcode Sync Pill -->
-            <button onclick="DayTracker.openPasscodeModal()" id="cloud-sync-status" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition hover:bg-emerald-100 shadow-2xs">
-              <span id="cloud-pulse-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <button onclick="App.openPasscodeModal()" id="cloud-sync-status" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 transition hover:bg-emerald-900/90 shadow-2xs">
+              <span id="cloud-pulse-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               <span id="passcode-display-badge" class="font-mono font-bold tracking-wider">SYNC: MY-PLANNER</span>
             </button>
           </div>
-          <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Real-Time Multi-Day Cross-Device Planner</p>
+          <p id="app-sub-status" class="text-[10px] text-slate-400 font-medium hidden sm:block">Unified Daily Planner & Office Workspace</p>
         </div>
       </div>
 
-      <!-- Header actions for Desktop / Tablet -->
+      <!-- Mode Switcher (Personal Schedule vs Office Pro) -->
+      <div class="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700 text-xs font-bold">
+        <button id="mode-btn-personal" onclick="App.switchMode('personal')" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-indigo-600 text-white shadow-xs transition flex items-center gap-1.5">
+          <i class="fa-solid fa-clock text-[11px]"></i>
+          <span class="hidden sm:inline">Daily</span> Schedule
+        </button>
+        <button id="mode-btn-office" onclick="App.switchMode('office')" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5">
+          <i class="fa-solid fa-briefcase text-[11px] text-blue-400"></i>
+          <span>Office Pro</span>
+        </button>
+      </div>
+
+      <!-- Header Action Buttons -->
       <div class="flex items-center gap-1.5 sm:gap-2">
-        <button id="btn-install-app" class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition active:scale-95">
+        <button id="btn-install-app" class="hidden items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition">
           <i class="fa-solid fa-download text-xs"></i>
-          <span class="text-xs">Install App</span>
+          <span class="hidden md:inline">Install</span>
         </button>
 
-        <button id="btn-open-templates" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition active:scale-95">
-          <i class="fa-solid fa-repeat text-indigo-600 text-xs"></i>
-          <span>Habits Bank</span>
+        <button id="btn-header-add" onclick="App.handleHeaderAddAction()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span id="btn-header-add-label" class="hidden sm:inline">Add Slot</span>
         </button>
-        <button id="btn-end-day" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition active:scale-95">
-          <i class="fa-solid fa-award text-xs"></i>
-          <span class="text-xs">End of Day</span>
-        </button>
-        <button onclick="DayTracker.openPasscodeModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-xs text-indigo-700 font-bold transition" title="Change Passcode">
-          <i class="fa-solid fa-key text-xs"></i>
+
+        <button onclick="App.openPasscodeModal()" class="flex items-center gap-1.5 p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-700 text-xs text-slate-200 font-bold transition" title="Sync & Passcode Settings">
+          <i class="fa-solid fa-sliders text-xs"></i>
           <span class="hidden md:inline">Sync Key</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-6 w-full flex-1 flex flex-col gap-4 sm:gap-6 pb-24 md:pb-8">
-    
-    <!-- Top Date Control Bar & Progress Metrics -->
-    <div class="flex flex-col gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs">
-      <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-1 justify-between sm:justify-start">
-          <button id="btn-prev-day" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Previous Day">
-            <i class="fa-solid fa-chevron-left text-xs"></i>
-          </button>
-          
-          <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 flex-1 max-w-[220px] justify-center">
-            <i class="fa-solid fa-calendar-day text-indigo-600 text-xs flex-shrink-0"></i>
-            <input type="date" id="date-picker" class="bg-transparent font-bold text-slate-800 text-xs sm:text-sm focus:outline-none cursor-pointer w-full text-center">
+  <!-- ================= WORKSPACE 1: PERSONAL DAILY PLANNER ================= -->
+  <div id="workspace-personal" class="w-full flex-1 flex flex-col view-transition">
+    <main class="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 w-full flex-1 flex flex-col gap-4 sm:gap-6 pb-24 md:pb-8">
+      
+      <!-- Top Date Navigation & Quick Progress Bar -->
+      <div class="flex flex-col gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+        <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div class="flex items-center gap-1.5 sm:gap-2 flex-1 justify-between sm:justify-start">
+            <button onclick="App.changeDate(-1)" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Previous Day">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            
+            <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 flex-1 max-w-[220px] justify-center">
+              <i class="fa-solid fa-calendar-day text-indigo-600 text-xs flex-shrink-0"></i>
+              <input type="date" id="personal-date-picker" class="bg-transparent font-bold text-slate-800 text-xs sm:text-sm focus:outline-none cursor-pointer w-full text-center">
+            </div>
+            
+            <button onclick="App.changeDate(1)" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Next Day">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
           </div>
           
-          <button id="btn-next-day" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Next Day">
-            <i class="fa-solid fa-chevron-right text-xs"></i>
-          </button>
+          <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+            <button onclick="App.goToToday()" class="flex-1 sm:flex-none px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition text-center">Today</button>
+            <button onclick="App.planTomorrow()" class="flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+              <span>Plan Tomorrow</span>
+            </button>
+            <button onclick="App.openEndDayReview()" class="flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-award text-xs"></i>
+              <span>End Day</span>
+            </button>
+          </div>
         </div>
-        
-        <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-          <button id="btn-today" class="flex-1 sm:flex-none px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition text-center">Today</button>
-          <button id="btn-plan-tomorrow" class="flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm">
-            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
-            <span>Plan Tomorrow</span>
-          </button>
+
+        <!-- Metric Badges -->
+        <div class="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600 bg-slate-50/90 p-2.5 rounded-xl border border-slate-200">
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Done</span>
+            <span class="text-xs sm:text-sm font-extrabold text-slate-900"><span id="stat-achieved-count">0</span>/<span id="stat-total-count">0</span></span>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left border-x border-slate-200">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Score</span>
+            <span id="stat-rate" class="text-xs sm:text-sm font-extrabold text-indigo-600">0%</span>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Streak</span>
+            <span id="stat-streak" class="text-xs sm:text-sm font-extrabold text-amber-500">0d</span>
+          </div>
         </div>
       </div>
 
-      <!-- Quick Metrics Bar -->
-      <div class="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
-          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Done</span>
-          <span class="text-xs sm:text-sm font-extrabold text-slate-900"><span id="stat-achieved-count">0</span>/<span id="stat-total-count">0</span></span>
-        </div>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left border-x border-slate-200">
-          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Score</span>
-          <span id="stat-rate" class="text-xs sm:text-sm font-extrabold text-indigo-600">0%</span>
-        </div>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
-          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Streak</span>
-          <span id="stat-streak" class="text-xs sm:text-sm font-extrabold text-amber-500">0d</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Desktop Navigation Tabs (Schedule vs Analytics) -->
-    <div class="hidden sm:flex border-b border-slate-200 text-sm font-semibold gap-6">
-      <button id="tab-btn-planner" class="pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition">
-        <i class="fa-solid fa-clock text-xs"></i> Time-Blocked Schedule
-      </button>
-      <button id="tab-btn-analytics" class="pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition">
-        <i class="fa-solid fa-chart-column text-xs"></i> Weekly & Monthly Analytics
-      </button>
-    </div>
-
-    <!-- VIEW 1: Daily Schedule View -->
-    <div id="view-planner" class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-      <section class="lg:col-span-8 flex flex-col gap-3.5">
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
-            <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
-            <button data-filter="pending" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Pending</button>
-            <button data-filter="completed" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Achieved</button>
-          </div>
-
-          <button id="btn-desktop-add-task" class="hidden sm:flex px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-100 items-center gap-2 transition active:scale-95">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Add Time Slot</span>
-          </button>
-        </div>
-
-        <div id="task-list" class="space-y-2.5 min-h-[280px]"></div>
-
-        <div id="empty-state" class="hidden flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
-            <i class="fa-solid fa-calendar-plus text-lg"></i>
-          </div>
-          <h3 class="font-bold text-slate-800 text-sm sm:text-base">No tasks scheduled for this day</h3>
-          <p class="text-xs text-slate-500 max-w-xs mt-1 mb-4">Add your first time block or insert your recurring habits with one tap.</p>
-          <div class="flex gap-2">
-            <button onclick="DayTracker.openTaskModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 active:scale-95 transition">Add Slot</button>
-            <button onclick="DayTracker.applyDefaultRecurring()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 active:scale-95 transition">Load Habits</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Sidebar Habits Bank -->
-      <aside class="lg:col-span-4 flex flex-col gap-4">
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-2.5">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
-              <i class="fa-solid fa-chart-pie text-indigo-600"></i> Daily Completion
-            </h3>
-            <span id="progress-percentage-label" class="text-xs font-black text-indigo-600">0%</span>
-          </div>
-          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-            <div id="progress-bar-fill" class="bg-indigo-600 h-2 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
-          </div>
-          <p id="progress-subtext" class="text-[11px] sm:text-xs text-slate-500 leading-normal">Schedule your time blocks to maintain peak focus.</p>
-        </div>
-
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
-              <i class="fa-solid fa-repeat text-indigo-600"></i> Repeating Habits Bank
-            </h3>
-            <button id="btn-edit-recurring-list" class="text-xs text-indigo-600 font-bold hover:underline">Manage</button>
-          </div>
-          <p class="text-[11px] text-slate-500">Tap to instantly add to today's schedule:</p>
-          <div id="quick-habits-container" class="flex flex-col gap-2"></div>
-        </div>
-      </aside>
-    </div>
-
-    <!-- VIEW 2: Analytics & Achievement Charts View -->
-    <div id="view-analytics" class="hidden flex-col gap-4 sm:gap-6">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
-        <div>
-          <h2 class="font-bold text-sm sm:text-base text-slate-800">Achievement Analytics</h2>
-          <p class="text-xs text-slate-500">Review consistency trends, completion rates, and focus discipline.</p>
-        </div>
-        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold w-full sm:w-auto">
-          <button id="chart-toggle-week" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs">Weekly</button>
-          <button id="chart-toggle-month" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900">Monthly</button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Avg Completion</span>
-          <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1" id="kpi-weekly-avg">0%</div>
-          <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
-            <i class="fa-solid fa-arrow-trend-up text-[10px]"></i> Goal: &gt; 80%
-          </span>
-        </div>
-        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Current Streak</span>
-          <div class="text-lg sm:text-2xl font-black text-amber-500 mt-1" id="kpi-streak">0 Days</div>
-          <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Consistent days</span>
-        </div>
-        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Total Achieved</span>
-          <div class="text-lg sm:text-2xl font-black text-indigo-600 mt-1" id="kpi-total-achieved">0</div>
-          <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Completed slots</span>
-        </div>
-        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-          <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Focus Hours</span>
-          <div class="text-lg sm:text-2xl font-black text-violet-600 mt-1" id="kpi-focus-hours">0h</div>
-          <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Deep work logged</span>
-        </div>
-      </div>
-
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
-        <div class="flex items-center justify-between mb-3">
-          <h3 id="chart-main-title" class="font-bold text-xs sm:text-sm text-slate-800">Weekly Achievement Breakdown (%)</h3>
-          <span class="text-[10px] text-slate-400">Passcode Synced</span>
-        </div>
-        <div class="w-full h-56 sm:h-72">
-          <canvas id="achievementChart"></canvas>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Mobile Floating Action Button -->
-  <button id="fab-add-task" class="sm:hidden fixed right-4 bottom-20 z-40 w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-300 flex items-center justify-center active:scale-90 transition-transform" aria-label="Add Time Slot">
-    <i class="fa-solid fa-plus text-xl"></i>
-  </button>
-
-  <!-- Mobile Bottom Persistent Navigation Bar -->
-  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200 pb-safe shadow-lg">
-    <div class="grid grid-cols-4 h-14 items-center">
-      <button id="nav-btn-tasks" class="flex flex-col items-center justify-center gap-1 text-indigo-600">
-        <i class="fa-solid fa-calendar-day text-sm"></i>
-        <span class="text-[10px] font-bold">Tasks</span>
-      </button>
-      <button id="nav-btn-analytics" class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700">
-        <i class="fa-solid fa-chart-column text-sm"></i>
-        <span class="text-[10px] font-medium">Analytics</span>
-      </button>
-      <button id="nav-btn-habits" class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700">
-        <i class="fa-solid fa-repeat text-sm"></i>
-        <span class="text-[10px] font-medium">Habits</span>
-      </button>
-      <button id="nav-btn-passcode" onclick="DayTracker.openPasscodeModal()" class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700">
-        <i class="fa-solid fa-key text-sm"></i>
-        <span class="text-[10px] font-medium">Sync Key</span>
-      </button>
-    </div>
-  </nav>
-
-  <!-- ================= MODALS ================= -->
-
-  <!-- 1. MODAL: Add / Edit Task (Includes Explicit Date Picker) -->
-  <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
-      <div class="sm:hidden w-full flex justify-center pt-2.5 pb-1">
-        <div class="w-10 h-1 rounded-full bg-slate-300"></div>
-      </div>
-
-      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 id="modal-task-title" class="font-bold text-slate-800 text-sm sm:text-base">Schedule Time Slot</h3>
-        <button id="btn-close-task-modal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95" aria-label="Close">
-          <i class="fa-solid fa-xmark text-sm"></i>
+      <!-- Schedule vs Analytics Tab Navigation -->
+      <div class="flex border-b border-slate-200 text-sm font-semibold gap-6">
+        <button id="personal-tab-schedule" onclick="App.switchPersonalTab('schedule')" class="pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition">
+          <i class="fa-solid fa-clock text-xs"></i> Time-Blocked Schedule
+        </button>
+        <button id="personal-tab-analytics" onclick="App.switchPersonalTab('analytics')" class="pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition">
+          <i class="fa-solid fa-chart-column text-xs"></i> Analytics & Trends
         </button>
       </div>
 
-      <form id="form-task" class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
-        <input type="hidden" id="task-id">
-        
+      <!-- TAB 1: Time Blocked Schedule -->
+      <div id="personal-view-schedule" class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+        <section class="lg:col-span-8 flex flex-col gap-3.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
+              <button data-filter="all" onclick="App.filterPersonalTasks('all')" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
+              <button data-filter="pending" onclick="App.filterPersonalTasks('pending')" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Pending</button>
+              <button data-filter="completed" onclick="App.filterPersonalTasks('completed')" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Achieved</button>
+            </div>
+
+            <button onclick="App.openPersonalTaskModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-100 flex items-center gap-2 transition active:scale-95">
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>Add Time Slot</span>
+            </button>
+          </div>
+
+          <div id="personal-task-list" class="space-y-2.5 min-h-[260px]"></div>
+
+          <div id="personal-empty-state" class="hidden flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+              <i class="fa-solid fa-calendar-plus text-lg"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-sm sm:text-base">No time blocks for this day</h3>
+            <p class="text-xs text-slate-500 max-w-xs mt-1 mb-4">Add your first time block or insert your recurring routine habits.</p>
+            <div class="flex gap-2">
+              <button onclick="App.openPersonalTaskModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 active:scale-95 transition">Add Slot</button>
+              <button onclick="App.applyDefaultRecurringHabits()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 active:scale-95 transition">Load Habits</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sidebar: Completion & Habits Bank -->
+        <aside class="lg:col-span-4 flex flex-col gap-4">
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-indigo-600"></i> Daily Completion
+              </h3>
+              <span id="progress-percentage-label" class="text-xs font-black text-indigo-600">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div id="progress-bar-fill" class="bg-indigo-600 h-2 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+            <p id="progress-subtext" class="text-[11px] text-slate-500 leading-normal">Schedule your time blocks to maintain peak daily focus.</p>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-repeat text-indigo-600"></i> Repeating Habits Bank
+              </h3>
+              <button onclick="App.openHabitsModal()" class="text-xs text-indigo-600 font-bold hover:underline">Manage</button>
+            </div>
+            <p class="text-[11px] text-slate-500">Tap to instantly add to today's schedule:</p>
+            <div id="quick-habits-container" class="flex flex-col gap-2"></div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- TAB 2: Personal Analytics -->
+      <div id="personal-view-analytics" class="hidden flex-col gap-4 sm:gap-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold uppercase">Avg Completion</span>
+            <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1" id="kpi-weekly-avg">0%</div>
+          </div>
+          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold uppercase">Current Streak</span>
+            <div class="text-lg sm:text-2xl font-black text-amber-500 mt-1" id="kpi-streak">0 Days</div>
+          </div>
+          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold uppercase">Total Achieved</span>
+            <div class="text-lg sm:text-2xl font-black text-indigo-600 mt-1" id="kpi-total-achieved">0</div>
+          </div>
+          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold uppercase">Focus Hours</span>
+            <div class="text-lg sm:text-2xl font-black text-violet-600 mt-1" id="kpi-focus-hours">0h</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-xs sm:text-sm text-slate-800">Weekly Achievement Breakdown (%)</h3>
+            <span class="text-[10px] text-slate-400">Passcode Synced</span>
+          </div>
+          <div class="w-full h-56 sm:h-72">
+            <canvas id="achievementChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ================= WORKSPACE 2: OFFICE TASK MANAGER PRO ================= -->
+  <div id="workspace-office" class="w-full flex-1 flex flex-col hidden view-transition bg-slate-100/70">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 w-full flex-1 flex flex-col gap-4">
+      
+      <!-- Office Sub-Navbar Navigation Bar -->
+      <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-2 overflow-x-auto">
+        <div class="flex items-center gap-1.5 text-xs font-bold shrink-0">
+          <button onclick="App.switchOfficeSubView('dashboard')" id="nav-office-dashboard" class="px-3 py-2 rounded-xl bg-blue-600 text-white transition flex items-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-chart-pie"></i> Dashboard
+          </button>
+          <button onclick="App.switchOfficeSubView('tasks')" id="nav-office-tasks" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check"></i> Tasks Kanban
+          </button>
+          <button onclick="App.switchOfficeSubView('calendar')" id="nav-office-calendar" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days"></i> Calendar & Working Days
+          </button>
+          <button onclick="App.switchOfficeSubView('meetings')" id="nav-office-meetings" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-users"></i> Meetings
+          </button>
+          <button onclick="App.switchOfficeSubView('approvals')" id="nav-office-approvals" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-signature"></i> Approvals
+          </button>
+          <button onclick="App.switchOfficeSubView('budget')" id="nav-office-budget" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-indian-rupee-sign text-emerald-600"></i> Budget (₹)
+          </button>
+          <button onclick="App.switchOfficeSubView('recurring')" id="nav-office-recurring" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-repeat"></i> Recurring Templates
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="App.openOfficeTaskModal()" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-plus"></i> New Office Task
+          </button>
+          <button onclick="App.rolloverIncompleteOfficeTasks()" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Rollover incomplete tasks to next working day">
+            <i class="fa-solid fa-forward-step text-blue-400"></i> Rollover Incomplete
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: Office Dashboard -->
+      <div id="office-view-dashboard" class="space-y-4">
+        <!-- Dashboard 4 KPIs -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-calendar-day"></i>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Due Today</p>
+              <p class="text-xl sm:text-2xl font-black text-slate-800" id="office-kpi-today">0</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Overdue</p>
+              <p class="text-xl sm:text-2xl font-black text-rose-600" id="office-kpi-overdue">0</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pending Approvals</p>
+              <p class="text-xl sm:text-2xl font-black text-amber-600" id="office-kpi-approvals">0</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Budget</p>
+              <p class="text-xl sm:text-2xl font-black text-emerald-600" id="office-kpi-budget">₹0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Deliverables & Upcoming List -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-8 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between border-b pb-3">
+              <h3 class="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-briefcase text-blue-600"></i> Today's Office Action Items
+              </h3>
+              <span id="office-today-badge" class="text-xs font-semibold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700"></span>
+            </div>
+            <div id="office-today-tasks-container" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+          </div>
+
+          <div class="lg:col-span-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between border-b pb-3">
+              <h3 class="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-bullhorn text-amber-500"></i> Upcoming Deadlines
+              </h3>
+              <span class="text-[10px] text-slate-400">Next 7 Days</span>
+            </div>
+            <div id="office-upcoming-container" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Kanban Tasks Board -->
+      <div id="office-view-tasks" class="hidden space-y-4">
+        <!-- Filters -->
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
+          <div class="flex-1 min-w-[140px]">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Filter by Category</label>
+            <select id="office-filter-category" onchange="App.renderOfficeKanban()" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">All Categories</option>
+              <option value="todo">📝 ToDo</option>
+              <option value="followup">🔄 Follow-up</option>
+              <option value="initiate">🚀 Initiate</option>
+              <option value="meeting">👥 Meeting</option>
+              <option value="approval">✅ Approval</option>
+              <option value="budget">💰 Budget</option>
+              <option value="deadline">⚠️ Deadline</option>
+            </select>
+          </div>
+
+          <div class="flex-1 min-w-[140px]">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Filter by Priority</label>
+            <select id="office-filter-priority" onchange="App.renderOfficeKanban()" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">All Priorities</option>
+              <option value="high">🔴 High Urgency</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </div>
+
+          <div class="flex-1 min-w-[140px]">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Search Keywords</label>
+            <input type="text" id="office-filter-search" oninput="App.renderOfficeKanban()" placeholder="Search title or stakeholder..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <!-- 3 Kanban Columns -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Column 1: Pending -->
+          <div class="bg-slate-200/60 p-3.5 rounded-2xl border border-slate-200 flex flex-col gap-2.5 min-h-[460px]">
+            <div class="flex items-center justify-between px-1">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-inbox text-blue-500"></i> Pending Action
+              </h4>
+              <span id="badge-kanban-pending" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">0</span>
+            </div>
+            <div id="col-kanban-pending" class="space-y-2.5 flex-1 overflow-y-auto"></div>
+          </div>
+
+          <!-- Column 2: In Progress / Waiting -->
+          <div class="bg-slate-200/60 p-3.5 rounded-2xl border border-slate-200 flex flex-col gap-2.5 min-h-[460px]">
+            <div class="flex items-center justify-between px-1">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-user-clock text-amber-500"></i> In Progress / Delegated
+              </h4>
+              <span id="badge-kanban-waiting" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800">0</span>
+            </div>
+            <div id="col-kanban-waiting" class="space-y-2.5 flex-1 overflow-y-auto"></div>
+          </div>
+
+          <!-- Column 3: Completed -->
+          <div class="bg-slate-200/60 p-3.5 rounded-2xl border border-slate-200 flex flex-col gap-2.5 min-h-[460px]">
+            <div class="flex items-center justify-between px-1">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i> Completed
+              </h4>
+              <span id="badge-kanban-completed" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">0</span>
+            </div>
+            <div id="col-kanban-completed" class="space-y-2.5 flex-1 overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: Office Interactive Calendar & Holidays -->
+      <div id="office-view-calendar" class="hidden space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 id="office-cal-month-title" class="font-black text-lg text-slate-800">Month Year</h3>
+              <p class="text-xs text-slate-500">Total Working Days: <span id="office-working-days-tally" class="font-bold text-blue-600">0</span></p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="App.prevOfficeMonth()" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+              <button onclick="App.resetOfficeMonthToToday()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold hover:bg-slate-100 transition">Current Month</button>
+              <button onclick="App.nextOfficeMonth()" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2 text-center text-xs font-bold text-slate-500">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div id="office-calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+        </div>
+
+        <!-- Working Day & Holiday Rule Setup -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-business-time text-blue-600"></i> Working Days & Holiday Configuration
+          </h4>
+          <p class="text-xs text-slate-500 leading-relaxed">Select standard working days. Rollover tasks and automated schedules will skip off-days and declared holidays automatically.</p>
+          
+          <div class="flex flex-wrap gap-2" id="office-working-days-checkboxes"></div>
+
+          <div class="pt-3 border-t border-slate-100 flex flex-wrap gap-2 items-center">
+            <input type="date" id="input-add-holiday-date" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
+            <input type="text" id="input-add-holiday-title" placeholder="Holiday description (e.g. Diwali)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50 flex-1 min-w-[150px]">
+            <button onclick="App.addOfficeHoliday()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">Add Holiday</button>
+          </div>
+
+          <div id="office-holidays-tags" class="flex flex-wrap gap-1.5 pt-1"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 4: Meetings -->
+      <div id="office-view-meetings" class="hidden space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <h3 class="font-bold text-base text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-handshake text-blue-600"></i> Scheduled Meetings & Reviews
+          </h3>
+          <div id="office-meetings-list" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 5: Approvals Workflow -->
+      <div id="office-view-approvals" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <h3 class="font-bold text-sm text-rose-600 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-stamp"></i> Pending Your Approval
+            </h3>
+            <div id="office-approvals-mine" class="space-y-2.5"></div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <h3 class="font-bold text-sm text-blue-600 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-hourglass-end"></i> Awaiting Others' Sign-Off
+            </h3>
+            <div id="office-approvals-others" class="space-y-2.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 6: Budget (₹) -->
+      <div id="office-view-budget" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div class="md:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col items-center">
+            <h3 class="font-bold text-sm text-slate-800 mb-3 text-left w-full flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-pie text-emerald-600"></i> Financial Sanction Breakdown (₹)
+            </h3>
+            <div class="w-full max-w-[280px] h-[260px] flex items-center justify-center">
+              <canvas id="officeBudgetChart"></canvas>
+            </div>
+            <p id="office-budget-total-text" class="text-sm font-extrabold text-slate-800 mt-2">Total Budget: ₹0</p>
+          </div>
+
+          <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-indian-rupee-sign text-emerald-600"></i> Sanctioned Task Budgets
+            </h3>
+            <div id="office-budget-tasks-list" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 7: Recurring Templates -->
+      <div id="office-view-recurring" class="hidden space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+          <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-repeat text-blue-600"></i> Master Recurring Office Workflows
+          </h3>
+          <p class="text-xs text-slate-500">Define recurring reporting, monthly compliance, or weekly reviews. Populate the current month with one tap.</p>
+          
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex flex-wrap gap-2 items-center">
+            <input type="text" id="tpl-office-title" placeholder="Template title (e.g. Month-End Financial Audit)" class="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white">
+            <select id="tpl-office-category" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
+              <option value="todo">ToDo</option>
+              <option value="meeting">Meeting</option>
+              <option value="approval">Approval</option>
+              <option value="budget">Budget</option>
+            </select>
+            <select id="tpl-office-rule" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
+              <option value="Daily">Every Working Day</option>
+              <option value="Weekly_1">Weekly (Monday)</option>
+              <option value="Weekly_5">Weekly (Friday)</option>
+              <option value="Monthly_1">Monthly (1st)</option>
+              <option value="Monthly_15">Monthly (15th)</option>
+              <option value="Monthly_30">Monthly (Month-End)</option>
+            </select>
+            <button onclick="App.addOfficeRecurringTemplate()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">Save Template</button>
+          </div>
+
+          <div id="office-templates-list" class="space-y-2"></div>
+
+          <div class="pt-3 border-t border-slate-100 flex justify-end">
+            <button onclick="App.populateMonthFromTemplates()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Populate Tasks For Active Month
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- MODAL 1: Personal Task Modal -->
+  <div id="modal-personal-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
+      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="personal-task-modal-title" class="font-bold text-slate-800 text-sm sm:text-base">Schedule Time Slot</h3>
+        <button onclick="App.closePersonalTaskModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="form-personal-task" onsubmit="App.savePersonalTask(event)" class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
+        <input type="hidden" id="personal-task-id">
         <div>
           <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Title</label>
-          <input type="text" id="task-input-title" required placeholder="e.g. Deep Work: System Spec Review" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <input type="text" id="personal-input-title" required placeholder="e.g. Deep Work: Review System Specs" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Calendar Date</label>
-          <input type="date" id="task-input-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-bold">
+          <input type="date" id="personal-input-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-bold">
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
           <div>
             <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Start Time</label>
-            <input type="time" id="task-input-start" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+            <input type="time" id="personal-input-start" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
           </div>
           <div>
             <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">End Time</label>
-            <input type="time" id="task-input-end" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+            <input type="time" id="personal-input-end" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
           <div>
             <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Priority</label>
-            <select id="task-input-priority" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+            <select id="personal-input-priority" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
               <option value="High">🔴 High</option>
               <option value="Medium" selected>🟡 Medium</option>
               <option value="Low">🟢 Low</option>
@@ -366,7 +658,7 @@
           </div>
           <div>
             <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
-            <select id="task-input-category" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+            <select id="personal-input-category" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
               <option value="Deep Work">💼 Deep Work</option>
               <option value="Meeting">📞 Meeting</option>
               <option value="Health">🏃 Health</option>
@@ -377,35 +669,125 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Notes / Checklist (Optional)</label>
-          <input type="text" id="task-input-notes" placeholder="e.g. Checklist or mobile reminder note" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-        </div>
-
-        <div class="flex items-center gap-2.5 pt-1">
-          <input type="checkbox" id="task-input-recurring" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
-          <label for="task-input-recurring" class="text-xs text-slate-700 font-medium">Save into Repeating Habits bank</label>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Notes / Checklist</label>
+          <input type="text" id="personal-input-notes" placeholder="Optional notes" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" id="btn-cancel-task" class="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition active:scale-95">Cancel</button>
+          <button type="button" onclick="App.closePersonalTaskModal()" class="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition active:scale-95">Cancel</button>
           <button type="submit" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition active:scale-95">Save & Sync</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 2. MODAL: End-of-Day Review -->
+  <!-- MODAL 2: Office Task Modal (With Comments/Update Log, ₹ Budget, Stakeholders) -->
+  <div id="modal-office-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all pb-safe flex flex-col max-h-[92vh]">
+      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+        <h3 id="office-task-modal-title" class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+          <i class="fa-solid fa-briefcase text-blue-600"></i> Office Task
+        </h3>
+        <button onclick="App.closeOfficeTaskModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="overflow-y-auto p-5 sm:p-6 flex-1 space-y-4">
+        <form id="form-office-task" onsubmit="App.saveOfficeTask(event)" class="space-y-3.5">
+          <input type="hidden" id="office-task-id">
+          
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Deliverable Title</label>
+            <input type="text" id="office-input-title" required placeholder="e.g. Q3 Strategic Allocation Document" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
+              <select id="office-input-category" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                <option value="todo">📝 ToDo</option>
+                <option value="followup">🔄 Follow-up</option>
+                <option value="initiate">🚀 Initiate</option>
+                <option value="meeting">👥 Meeting</option>
+                <option value="approval">✅ Approval</option>
+                <option value="budget">💰 Budget</option>
+                <option value="deadline">⚠️ Deadline</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Workflow Status</label>
+              <select id="office-input-status" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                <option value="pending">📥 Pending</option>
+                <option value="waiting">⏳ In Progress / Delegated</option>
+                <option value="completed">✅ Completed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Priority</label>
+              <select id="office-input-priority" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                <option value="high">🔴 High Urgency</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Target / Due Date</label>
+              <input type="date" id="office-input-duedate" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Stakeholder / Delegated To</label>
+              <input type="text" id="office-input-assignee" placeholder="e.g. Boss, Sarah, IT" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Budget Allocation (₹)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-xs font-bold text-slate-500">₹</span>
+                <input type="number" id="office-input-budget" placeholder="0" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-300 text-xs bg-white font-bold text-emerald-700">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Notes</label>
+            <textarea id="office-input-description" rows="2" placeholder="Deliverable requirements or agenda..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"></textarea>
+          </div>
+
+          <!-- Chronological Comments / Update Log -->
+          <div id="office-updates-container" class="pt-3 border-t border-slate-100 hidden space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-regular fa-comments text-blue-600"></i> Progress Log & Comments
+            </h4>
+            <div id="office-updates-list" class="space-y-2 max-h-36 overflow-y-auto pr-1"></div>
+            <div class="flex gap-2">
+              <input type="text" id="office-new-comment-input" placeholder="Add chronological status update..." class="flex-1 px-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-slate-50">
+              <button type="button" onclick="App.addOfficeTaskComment()" class="px-3 py-1.5 bg-blue-100 text-blue-800 hover:bg-blue-200 font-bold rounded-xl text-xs transition">Add Update</button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="App.closeOfficeTaskModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">Cancel</button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 transition">Save Office Task</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: End of Day Review -->
   <div id="modal-review" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
       <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 sm:p-6 text-white">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-award text-lg"></i>
-            <h3 class="font-bold text-base sm:text-lg">Daily Evening Review</h3>
+            <h3 class="font-bold text-base sm:text-lg">Daily Performance Review</h3>
           </div>
-          <button id="btn-close-review" class="text-white/80 hover:text-white p-1 rounded-lg">
-            <i class="fa-solid fa-xmark text-sm"></i>
-          </button>
+          <button onclick="App.closeEndDayReview()" class="text-white/80 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <p class="text-xs text-white/90 mt-1" id="review-date-label">Reflect on accomplishments & prepare tomorrow.</p>
       </div>
@@ -414,54 +796,41 @@
         <div class="grid grid-cols-3 gap-2 text-center">
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
             <span class="text-[10px] text-slate-500 font-bold block">Achieved</span>
-            <span id="review-achieved-val" class="text-lg sm:text-xl font-black text-emerald-600">0</span>
+            <span id="review-achieved-val" class="text-lg font-black text-emerald-600">0</span>
           </div>
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
             <span class="text-[10px] text-slate-500 font-bold block">Missed</span>
-            <span id="review-missed-val" class="text-lg sm:text-xl font-black text-rose-500">0</span>
+            <span id="review-missed-val" class="text-lg font-black text-rose-500">0</span>
           </div>
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
             <span class="text-[10px] text-slate-500 font-bold block">Daily Score</span>
-            <span id="review-score-val" class="text-lg sm:text-xl font-black text-indigo-600">0%</span>
+            <span id="review-score-val" class="text-lg font-black text-indigo-600">0%</span>
           </div>
         </div>
 
-        <div id="review-missed-container" class="space-y-2">
-          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Unfinished Tasks</h4>
-          <div id="review-missed-list" class="max-h-36 overflow-y-auto space-y-1.5 text-xs text-slate-600 pr-1"></div>
-          <div class="pt-1">
-            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700">
-              <input type="checkbox" id="check-carryover" checked class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
-              <span>Automatically roll over unfinished tasks to tomorrow</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 flex items-start gap-2.5">
-          <i class="fa-solid fa-bell text-indigo-600 mt-0.5"></i>
-          <p class="text-xs text-indigo-900 leading-relaxed">
-            <b>Consistency Tip:</b> Planning your time blocks tonight guarantees clear momentum tomorrow morning.
-          </p>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+            <input type="checkbox" id="check-carryover" checked class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
+            <span>Automatically roll over unfinished slots to tomorrow</span>
+          </label>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2">
-          <button id="btn-cancel-review" class="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition active:scale-95">Cancel</button>
-          <button id="btn-finalize-review" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-100 transition active:scale-95">Finalize Day</button>
+          <button onclick="App.closeEndDayReview()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">Cancel</button>
+          <button onclick="App.finalizeEndDayReview()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition">Finalize Day</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 3. MODAL: Recurring Habits Manager -->
-  <div id="modal-recurring" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <!-- MODAL 4: Recurring Habits Manager (Personal) -->
+  <div id="modal-recurring-habits" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
       <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
         <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
           <i class="fa-solid fa-repeat text-indigo-600"></i> Master Repeating Habits
         </h3>
-        <button id="btn-close-recurring" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100" aria-label="Close">
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
+        <button onclick="App.closeHabitsModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
@@ -469,98 +838,88 @@
           <input type="text" id="input-new-habit-title" placeholder="New habit (e.g. Reading)" class="flex-1 min-w-[120px] px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <input type="time" id="input-new-habit-time" value="08:00" class="w-20 px-2 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50" title="Start Time">
           <input type="time" id="input-new-habit-end-time" value="09:00" class="w-20 px-2 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50" title="End Time">
-          <button id="btn-add-habit" class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 active:scale-95 transition">Add</button>
+          <button onclick="App.addHabitToBank()" class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition">Add</button>
         </div>
 
-        <div class="text-xs font-bold text-slate-700 uppercase tracking-wider mt-2">Your Master Habits Bank</div>
+        <div class="text-xs font-bold text-slate-700 uppercase tracking-wider mt-2">Habits Bank</div>
         <div id="master-habits-list" class="max-h-56 overflow-y-auto space-y-2 pr-1"></div>
 
         <div class="pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
-          <button id="btn-apply-all-habits" class="flex-1 px-3.5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 active:scale-95 transition">
+          <button onclick="App.applyDefaultRecurringHabits()" class="flex-1 px-3.5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition">
             Apply All to Today
           </button>
-          <button id="btn-done-habits" class="px-4 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 active:scale-95 transition">Done</button>
+          <button onclick="App.closeHabitsModal()" class="px-4 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition">Done</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 4. MODAL: Passcode / Sync Code Setup with Backup/Restore -->
+  <!-- MODAL 5: Sync Key & Passcode Setup Modal -->
   <div id="modal-passcode" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-slate-100 overflow-hidden transform transition-all p-5 sm:p-6 pb-safe">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
-          <i class="fa-solid fa-key text-indigo-600"></i> Settings & Sync
+          <i class="fa-solid fa-key text-indigo-600"></i> Settings & Sync Key
         </h3>
-        <button onclick="DayTracker.closePasscodeModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
+        <button onclick="App.closePasscodeModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="py-4 space-y-3.5">
         <p class="text-[11px] text-slate-500 leading-relaxed">
-          Enter this exact <strong>Passcode</strong> on your phone and computer to link your calendar across all days.
+          Type <strong>OFFICE</strong> to instantly activate the Office Task Suite. Any exact passcode links all your mobile and PC schedules together in real time.
         </p>
 
         <div>
           <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Your Passcode</label>
           <div class="flex gap-2">
-            <input type="text" id="input-custom-passcode" placeholder="e.g. ALUVA-2026" class="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 font-mono font-bold tracking-wider text-sm uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            <button onclick="DayTracker.generateRandomPasscode()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
-              Random
+            <input type="text" id="input-custom-passcode" placeholder="e.g. OFFICE or ALUVA-2026" class="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 font-mono font-bold tracking-wider text-sm uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <button onclick="App.setPasscodeQuick('OFFICE')" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold rounded-xl transition">
+              OFFICE
             </button>
           </div>
         </div>
 
         <div class="pt-2 flex flex-col gap-2">
-          <button onclick="DayTracker.applyPasscode()" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition shadow-md shadow-indigo-100 active:scale-95">
+          <button onclick="App.applyPasscodeFromInput()" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition shadow-md shadow-indigo-100 active:scale-95">
             <i class="fa-solid fa-plug text-xs"></i> Connect Passcode
           </button>
-          <button onclick="DayTracker.copyPasscode()" class="w-full py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium flex items-center justify-center gap-1.5 transition">
-            <i class="fa-regular fa-copy text-xs"></i> Copy Passcode
-          </button>
           
-          <div class="w-full h-px bg-slate-100 my-1"></div>
-          
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="DayTracker.forcePushCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-upload text-indigo-600"></i> Sync All Dates
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="App.forcePushCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-upload text-indigo-600"></i> Push to Cloud
             </button>
-            <button onclick="DayTracker.forcePullCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-download text-emerald-600"></i> Pull All Dates
+            <button onclick="App.forcePullCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-download text-emerald-600"></i> Pull from Cloud
             </button>
           </div>
           
           <div class="grid grid-cols-2 gap-2">
-            <button onclick="DayTracker.exportBackup()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5" title="Download JSON Backup">
-              <i class="fa-solid fa-file-export text-blue-600"></i> Export Backup
+            <button onclick="App.exportFullBackupJSON()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-file-export text-blue-600"></i> Export JSON
             </button>
-            <button onclick="document.getElementById('input-backup-file').click()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5" title="Restore JSON Backup">
-              <i class="fa-solid fa-file-import text-amber-600"></i> Restore Backup
+            <button onclick="document.getElementById('input-backup-file').click()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-file-import text-amber-600"></i> Restore JSON
             </button>
           </div>
-
-          <button id="btn-modal-install-app" class="hidden w-full py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold items-center justify-center gap-2 transition active:scale-95">
-            <i class="fa-solid fa-mobile-screen-button text-xs"></i> Install to Home Screen
-          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Notification Toast -->
-  <div id="toast" class="fixed top-4 sm:top-auto sm:bottom-5 right-4 sm:right-5 z-50 transform -translate-y-20 sm:translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900/95 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800">
+  <div id="toast" class="fixed top-4 sm:top-auto sm:bottom-5 right-4 sm:right-5 z-50 transform -translate-y-20 sm:translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800">
     <i class="fa-solid fa-circle-check text-emerald-400"></i>
     <span id="toast-message">Action synchronized!</span>
   </div>
 
-  <!-- Hidden File Input for JSON Backup Restore -->
-  <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="DayTracker.importBackup(event)" />
+  <!-- Hidden File Input for Backup Import -->
+  <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="App.importFullBackupJSON(event)" />
 
-  <!-- ================= UNIFIED CROSS-DEVICE ENGINE (FIXED) ================= -->
+  <!-- ================= UNIFIED JAVASCRIPT APPLICATION LOGIC ================= -->
   <script>
     let deferredInstallPrompt = null;
 
+    // PWA Manifest generator
     (function setupPwaManifest() {
       try {
         function createIconDataUrl(size) {
@@ -568,10 +927,9 @@
           canvas.width = size;
           canvas.height = size;
           const ctx = canvas.getContext('2d');
-          
           const grad = ctx.createLinearGradient(0, 0, size, size);
-          grad.addColorStop(0, '#4f46e5');
-          grad.addColorStop(1, '#7c3aed');
+          grad.addColorStop(0, '#1e293b');
+          grad.addColorStop(1, '#4f46e5');
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.roundRect(0, 0, size, size, size * 0.22);
@@ -586,74 +944,48 @@
           ctx.lineTo(size * 0.44, size * 0.68);
           ctx.lineTo(size * 0.74, size * 0.35);
           ctx.stroke();
-
           return canvas.toDataURL('image/png');
         }
 
         const icon192 = createIconDataUrl(192);
-        const icon512 = createIconDataUrl(512);
-
         const appleIcon = document.getElementById('apple-touch-icon');
         if (appleIcon) appleIcon.href = icon192;
 
         const manifestData = {
-          name: "DayTrack Pro - Daily Planner",
+          name: "DayTrack Pro & Office Manager",
           short_name: "DayTrack",
           start_url: window.location.href.split('#')[0],
           display: "standalone",
           background_color: "#f8fafc",
-          theme_color: "#4f46e5",
-          icons: [
-            { src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
-            { src: icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
-          ]
+          theme_color: "#1e293b",
+          icons: [{ src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" }]
         };
 
         const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' });
-        const manifestUrl = URL.createObjectURL(blob);
         const link = document.createElement('link');
         link.rel = 'manifest';
-        link.href = manifestUrl;
+        link.href = URL.createObjectURL(blob);
         document.head.appendChild(link);
-      } catch (e) {
-        console.warn('PWA manifest generation note:', e);
-      }
+      } catch (e) {}
     })();
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
-      
       const btnHeader = document.getElementById('btn-install-app');
-      const btnModal = document.getElementById('btn-modal-install-app');
       if (btnHeader) {
         btnHeader.classList.remove('hidden');
         btnHeader.classList.add('flex');
       }
-      if (btnModal) {
-        btnModal.classList.remove('hidden');
-        btnModal.classList.add('flex');
-      }
     });
 
-    async function triggerPwaInstall() {
-      if (!deferredInstallPrompt) return;
-      deferredInstallPrompt.prompt();
-      const choiceResult = await deferredInstallPrompt.userChoice;
-      if (choiceResult.outcome === 'accepted') {
-        const btnHeader = document.getElementById('btn-install-app');
-        const btnModal = document.getElementById('btn-modal-install-app');
-        if (btnHeader) btnHeader.classList.add('hidden');
-        if (btnModal) btnModal.classList.add('hidden');
-      }
-      deferredInstallPrompt = null;
-    }
-
-    const DayTracker = (() => {
+    const App = (() => {
       const myClientId = 'cli_' + Math.random().toString(36).substring(2, 9);
       let sseConnection = null;
       let lastSyncTimestamp = 0;
       let reconnectTimer = null;
+      let budgetChartInstance = null;
+      let personalChartInstance = null;
 
       let currentPasscode = (localStorage.getItem('DAYTRACK_PASSCODE') || 'MY-PLANNER')
         .trim()
@@ -668,16 +1000,25 @@
         { id: 'h5', title: 'Daily Review & Next Day Plan', start: '20:30', end: '21:00', priority: 'High', category: 'Planning' },
       ];
 
+      // Unified Application State
       let state = {
-        tasksByDate: {},
-        habits: [...defaultHabits],
-        history: {}
+        mode: 'personal', // 'personal' | 'office'
+        personal: {
+          tasksByDate: {},
+          habits: [...defaultHabits],
+          history: {}
+        },
+        office: {
+          tasks: [],
+          workingDays: [1, 2, 3, 4, 5], // Mon to Fri
+          holidays: [], // array of { date: 'YYYY-MM-DD', title: '...' }
+          recurring: []
+        }
       };
 
       let currentDate = getFormattedDate(new Date());
-      let currentFilter = 'all';
-      let chartInstance = null;
-      let chartRange = 'week';
+      let officeCalendarMonth = new Date();
+      let personalFilter = 'all';
 
       function getFormattedDate(d) {
         const year = d.getFullYear();
@@ -686,9 +1027,9 @@
         return `${year}-${month}-${day}`;
       }
 
-      function getTopicName() {
-        const cleanCode = currentPasscode.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        return `dt_planner_${cleanCode}`;
+      function formatINR(val) {
+        if (!val && val !== 0) return '₹0';
+        return '₹' + Number(val).toLocaleString('en-IN');
       }
 
       function showToast(msg) {
@@ -708,41 +1049,44 @@
         const badgeText = document.getElementById('passcode-display-badge');
         if (!statusEl || !pulseDot || !badgeText) return;
 
-        badgeText.innerText = `KEY: ${currentPasscode}`;
+        badgeText.innerText = `SYNC: ${currentPasscode}`;
 
         if (status === 'syncing') {
-          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 transition';
-          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60 transition';
+          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
         } else if (status === 'synced') {
-          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition hover:bg-emerald-100 shadow-2xs';
-          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 transition hover:bg-emerald-900/90 shadow-2xs';
+          pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse';
         } else {
-          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 transition hover:bg-rose-100';
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/60 transition hover:bg-rose-900';
           pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
         }
       }
 
       function loadLocalFallback() {
         try {
-          const cTasks = localStorage.getItem(`daytrack_tasks_${currentPasscode}`);
-          if (cTasks) state.tasksByDate = JSON.parse(cTasks);
-
-          const cHabits = localStorage.getItem(`daytrack_habits_${currentPasscode}`);
-          if (cHabits) state.habits = JSON.parse(cHabits);
-
-          const cHistory = localStorage.getItem(`daytrack_history_${currentPasscode}`);
-          if (cHistory) state.history = JSON.parse(cHistory);
-        } catch(e) {
+          const saved = localStorage.getItem(`daytrack_unified_${currentPasscode}`);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.personal) state.personal = parsed.personal;
+            if (parsed.office) state.office = parsed.office;
+            if (parsed.mode) state.mode = parsed.mode;
+          }
+        } catch (e) {
           console.warn('Local storage parse error', e);
         }
       }
 
       function saveLocal() {
         try {
-          localStorage.setItem(`daytrack_tasks_${currentPasscode}`, JSON.stringify(state.tasksByDate));
-          localStorage.setItem(`daytrack_habits_${currentPasscode}`, JSON.stringify(state.habits));
-          localStorage.setItem(`daytrack_history_${currentPasscode}`, JSON.stringify(state.history));
-        } catch(e) {}
+          localStorage.setItem(`daytrack_unified_${currentPasscode}`, JSON.stringify(state));
+        } catch (e) {}
+      }
+
+      // ================= CLOUD SYNC ENGINE =================
+      function getTopicName() {
+        const cleanCode = currentPasscode.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return `dt_unified_${cleanCode}`;
       }
 
       async function sendCloudPayload(payload) {
@@ -758,162 +1102,57 @@
             return true;
           }
         } catch (err) {
-          console.warn('Network send note:', err);
+          console.warn('Cloud transmit warning:', err);
         }
         updateSyncStatus('synced');
         return false;
       }
 
-      // FIX: Always broadcast FULL STATE to all devices for all dates
       async function broadcastFullState() {
         saveLocal();
         const payload = {
-          type: 'full_sync',
+          type: 'full_unified_sync',
           senderId: myClientId,
           timestamp: Date.now(),
           passcode: currentPasscode,
-          tasksByDate: state.tasksByDate,
-          habits: state.habits,
-          history: state.history
+          personal: state.personal,
+          office: state.office
         };
-
-        const jsonStr = JSON.stringify(payload);
-        
-        // If small enough, send entire state as one message
-        if (jsonStr.length < 3900) {
-          await sendCloudPayload(payload);
-        } else {
-          // If too large, split by date but send ALL dates individually to reconstruct on other devices
-          console.log('State large, broadcasting each date individually...');
-          const dates = Object.keys(state.tasksByDate).sort();
-          
-          // First send habits and history as a separate message
-          await sendCloudPayload({
-            type: 'metadata_sync',
-            senderId: myClientId,
-            timestamp: Date.now(),
-            passcode: currentPasscode,
-            habits: state.habits,
-            history: state.history
-          });
-          
-          // Then send each date's tasks
-          for (const d of dates) {
-            await sendCloudPayload({
-              type: 'date_sync',
-              senderId: myClientId,
-              timestamp: Date.now(),
-              passcode: currentPasscode,
-              date: d,
-              tasks: state.tasksByDate[d] || []
-            });
-            await new Promise(r => setTimeout(r, 150));
-          }
-        }
+        await sendCloudPayload(payload);
       }
 
-      // FIX: When syncing a single date, ALWAYS broadcast full state if possible
-      async function broadcastDateSync(dateStr) {
+      function applyIncomingRemoteState(remote) {
+        if (!remote) return;
+        if (remote.timestamp && remote.timestamp <= lastSyncTimestamp) return;
+        lastSyncTimestamp = remote.timestamp || Date.now();
+
+        if (remote.personal) {
+          state.personal = {
+            tasksByDate: { ...state.personal.tasksByDate, ...(remote.personal.tasksByDate || {}) },
+            habits: remote.personal.habits || state.personal.habits,
+            history: { ...state.personal.history, ...(remote.personal.history || {}) }
+          };
+        }
+
+        if (remote.office) {
+          state.office = {
+            tasks: remote.office.tasks || state.office.tasks,
+            workingDays: remote.office.workingDays || state.office.workingDays,
+            holidays: remote.office.holidays || state.office.holidays,
+            recurring: remote.office.recurring || state.office.recurring
+          };
+        }
+
         saveLocal();
-        
-        // Always try to send complete state first
-        const fullPayload = {
-          type: 'full_sync',
-          senderId: myClientId,
-          timestamp: Date.now(),
-          passcode: currentPasscode,
-          tasksByDate: state.tasksByDate,
-          habits: state.habits,
-          history: state.history
-        };
-        
-        const jsonStr = JSON.stringify(fullPayload);
-        
-        if (jsonStr.length < 3900) {
-          // Send full state if it fits
-          await sendCloudPayload(fullPayload);
-        } else {
-          // If full state is large, send metadata + this specific date
-          await sendCloudPayload({
-            type: 'metadata_sync',
-            senderId: myClientId,
-            timestamp: Date.now(),
-            passcode: currentPasscode,
-            habits: state.habits,
-            history: state.history
-          });
-          
-          await sendCloudPayload({
-            type: 'date_sync',
-            senderId: myClientId,
-            timestamp: Date.now(),
-            passcode: currentPasscode,
-            date: dateStr,
-            tasks: state.tasksByDate[dateStr] || []
-          });
-        }
-      }
-
-      function forcePushCloud() {
-        broadcastFullState();
-        showToast('All calendar dates pushed to cloud! 🚀');
-      }
-
-      function applyIncomingPacket(packet) {
-        if (!packet) return;
-        if (packet.timestamp && packet.timestamp > lastSyncTimestamp) {
-          lastSyncTimestamp = packet.timestamp;
-        }
-
-        // Handle full state sync
-        if (packet.type === 'full_sync' && packet.tasksByDate) {
-          state.tasksByDate = { ...packet.tasksByDate };
-          if (packet.habits && Array.isArray(packet.habits) && packet.habits.length > 0) {
-            state.habits = packet.habits;
-          }
-          if (packet.history) {
-            state.history = packet.history;
-          }
-          saveLocal();
-          renderDayTasks();
-          renderHabitsBank();
-          updateDailyMetrics();
-        }
-        // Handle metadata sync (habits and history without tasks)
-        else if (packet.type === 'metadata_sync') {
-          if (packet.habits && Array.isArray(packet.habits) && packet.habits.length > 0) {
-            state.habits = packet.habits;
-          }
-          if (packet.history) {
-            state.history = packet.history;
-          }
-          saveLocal();
-          renderHabitsBank();
-        }
-        // Handle individual date sync
-        else if (packet.type === 'date_sync' && packet.date) {
-          state.tasksByDate[packet.date] = packet.tasks || [];
-          saveLocal();
-          if (currentDate === packet.date) {
-            renderDayTasks();
-          }
-          updateDailyMetrics();
-        }
-
-        const viewAnalytics = document.getElementById('view-analytics');
-        if (viewAnalytics && !viewAnalytics.classList.contains('hidden')) {
-          renderAnalytics();
-        }
+        renderActiveWorkspace();
       }
 
       async function pullLatestFromCloud(silent = false) {
         updateSyncStatus('syncing');
         const topic = getTopicName();
-
         try {
           const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1`);
           if (!res.ok) throw new Error('Poll failed');
-
           const text = await res.text();
           const lines = text.trim().split('\n').filter(Boolean);
 
@@ -923,84 +1162,174 @@
               const item = JSON.parse(lines[i]);
               if (item.event === 'message' && item.message) {
                 const packet = JSON.parse(item.message);
-                if (packet && (packet.type || packet.tasksByDate)) {
-                  applyIncomingPacket(packet);
+                if (packet && (packet.personal || packet.office)) {
+                  applyIncomingRemoteState(packet);
                   processed++;
                 }
               }
-            } catch(e) {}
+            } catch (e) {}
           }
-
           if (processed > 0 && !silent) {
-            showToast(`All calendar dates up to date! ☁️`);
+            showToast('All calendar and office tasks synced! ✨');
           }
           updateSyncStatus('synced');
         } catch (err) {
-          console.warn('Cloud pull note:', err.message);
           updateSyncStatus('synced');
         }
       }
 
       function connectRealtimeListener() {
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
-          reconnectTimer = null;
-        }
-
-        if (sseConnection) {
-          sseConnection.close();
-          sseConnection = null;
-        }
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (sseConnection) sseConnection.close();
 
         const topic = getTopicName();
         try {
           sseConnection = new EventSource(`https://ntfy.sh/${topic}/sse`);
-
-          sseConnection.onopen = () => {
-            updateSyncStatus('synced');
-          };
-
+          sseConnection.onopen = () => updateSyncStatus('synced');
           sseConnection.onmessage = (event) => {
             try {
               const data = JSON.parse(event.data);
               if (data.event === 'message' && data.message) {
                 const packet = JSON.parse(data.message);
                 if (packet.senderId !== myClientId) {
-                  applyIncomingPacket(packet);
+                  applyIncomingRemoteState(packet);
                   showToast('Live updated from paired device! ✨');
                 }
               }
-            } catch(err) {}
+            } catch (err) {}
           };
-
           sseConnection.onerror = () => {
             updateSyncStatus('syncing');
-            if (sseConnection) {
-              sseConnection.close();
-              sseConnection = null;
-            }
+            if (sseConnection) sseConnection.close();
             reconnectTimer = setTimeout(() => {
               connectRealtimeListener();
               pullLatestFromCloud(true);
-            }, 4000);
+            }, 5000);
           };
-        } catch(e) {
-          console.warn('SSE initialization note:', e);
+        } catch (e) {}
+      }
+
+      // ================= MODE SWITCHING LOGIC =================
+      function switchMode(newMode) {
+        state.mode = newMode;
+        saveLocal();
+
+        const pWork = document.getElementById('workspace-personal');
+        const oWork = document.getElementById('workspace-office');
+        const btnP = document.getElementById('mode-btn-personal');
+        const btnO = document.getElementById('mode-btn-office');
+        const headerAddLabel = document.getElementById('btn-header-add-label');
+        const appTitleSuffix = document.getElementById('app-title-suffix');
+        const appLogoBadge = document.getElementById('app-logo-badge');
+        const appLogoIcon = document.getElementById('app-logo-icon');
+
+        if (newMode === 'office') {
+          pWork.classList.add('hidden');
+          oWork.classList.remove('hidden');
+          btnO.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-blue-600 text-white shadow-xs transition flex items-center gap-1.5';
+          btnP.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5';
+          headerAddLabel.innerText = 'New Task';
+          appTitleSuffix.innerText = 'Office';
+          appTitleSuffix.className = 'text-blue-400 font-extrabold';
+          appLogoBadge.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md flex-shrink-0 cursor-pointer';
+          appLogoIcon.className = 'fa-solid fa-briefcase text-sm sm:text-base';
+          renderOfficeDashboard();
+        } else {
+          oWork.classList.add('hidden');
+          pWork.classList.remove('hidden');
+          btnP.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-indigo-600 text-white shadow-xs transition flex items-center gap-1.5';
+          btnO.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5';
+          headerAddLabel.innerText = 'Add Slot';
+          appTitleSuffix.innerText = 'Pro';
+          appTitleSuffix.className = 'text-indigo-400 font-extrabold';
+          appLogoBadge.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md flex-shrink-0 cursor-pointer';
+          appLogoIcon.className = 'fa-solid fa-list-check text-sm sm:text-base';
+          renderPersonalDayTasks();
         }
       }
 
-      function renderDayTasks() {
-        const dayTasks = state.tasksByDate[currentDate] || [];
-        const taskListEl = document.getElementById('task-list');
-        const emptyStateEl = document.getElementById('empty-state');
+      function handleHeaderAddAction() {
+        if (state.mode === 'office') {
+          openOfficeTaskModal();
+        } else {
+          openPersonalTaskModal();
+        }
+      }
+
+      function renderActiveWorkspace() {
+        if (state.mode === 'office') {
+          renderOfficeDashboard();
+        } else {
+          renderPersonalDayTasks();
+          renderHabitsBank();
+        }
+      }
+
+      // ================= PERSONAL WORKSPACE LOGIC =================
+      function switchPersonalTab(tab) {
+        const vSched = document.getElementById('personal-view-schedule');
+        const vAnaly = document.getElementById('personal-view-analytics');
+        const tSched = document.getElementById('personal-tab-schedule');
+        const tAnaly = document.getElementById('personal-tab-analytics');
+
+        if (tab === 'analytics') {
+          vSched.classList.add('hidden');
+          vAnaly.classList.remove('hidden');
+          tAnaly.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
+          tSched.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
+          renderPersonalAnalytics();
+        } else {
+          vAnaly.classList.add('hidden');
+          vSched.classList.remove('hidden');
+          tSched.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
+          tAnaly.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
+        }
+      }
+
+      function changeDate(days) {
+        const d = new Date(currentDate + 'T00:00:00');
+        d.setDate(d.getDate() + days);
+        currentDate = getFormattedDate(d);
+        document.getElementById('personal-date-picker').value = currentDate;
+        renderPersonalDayTasks();
+      }
+
+      function goToToday() {
+        currentDate = getFormattedDate(new Date());
+        document.getElementById('personal-date-picker').value = currentDate;
+        renderPersonalDayTasks();
+      }
+
+      function planTomorrow() {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        currentDate = getFormattedDate(d);
+        document.getElementById('personal-date-picker').value = currentDate;
+        renderPersonalDayTasks();
+        showToast('Viewing tomorrow! Plan your focus blocks.');
+      }
+
+      function filterPersonalTasks(filter) {
+        personalFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.className = (btn.dataset.filter === filter) 
+            ? 'filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition'
+            : 'filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition';
+        });
+        renderPersonalDayTasks();
+      }
+
+      function renderPersonalDayTasks() {
+        const dayTasks = state.personal.tasksByDate[currentDate] || [];
+        const taskListEl = document.getElementById('personal-task-list');
+        const emptyStateEl = document.getElementById('personal-empty-state');
         
         taskListEl.innerHTML = '';
-
         dayTasks.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
 
-        const filteredTasks = dayTasks.filter(task => {
-          if (currentFilter === 'pending') return !task.completed;
-          if (currentFilter === 'completed') return task.completed;
+        const filtered = dayTasks.filter(t => {
+          if (personalFilter === 'pending') return !t.completed;
+          if (personalFilter === 'completed') return t.completed;
           return true;
         });
 
@@ -1012,57 +1341,41 @@
           emptyStateEl.classList.remove('flex');
         }
 
-        filteredTasks.forEach(task => {
+        filtered.forEach(task => {
           const card = document.createElement('div');
-          card.className = `p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 transition-all active:bg-slate-50/80 ${task.completed ? 'bg-slate-50/70 border-slate-200' : ''}`;
+          card.className = `p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 task-card-hover ${task.completed ? 'bg-slate-50/70 border-slate-200' : ''}`;
           
-          const priorityStyles = {
-            High: 'bg-rose-50 text-rose-700 border-rose-200',
-            Medium: 'bg-amber-50 text-amber-700 border-amber-200',
-            Low: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-          };
-          const badgeClass = priorityStyles[task.priority] || priorityStyles.Medium;
-
           card.innerHTML = `
-            <div class="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0">
-              <button onclick="DayTracker.toggleTask('${task.id}')" class="w-11 h-11 flex-shrink-0 flex items-center justify-center -ml-1 rounded-xl active:scale-90 transition-transform" aria-label="Toggle Complete">
-                <div class="w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'border-slate-300 bg-white hover:border-indigo-400 text-transparent'}">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <button onclick="App.togglePersonalTask('${task.id}')" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl active:scale-90 transition-transform">
+                <div class="w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white hover:border-indigo-400 text-transparent'}">
                   <i class="fa-solid fa-check text-xs"></i>
                 </div>
               </button>
-
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-                  <span class="text-[11px] sm:text-xs font-bold text-slate-800 flex items-center gap-1">
-                    <i class="fa-regular fa-clock text-slate-400 text-[10px]"></i>
-                    ${task.start} – ${task.end}
+                  <span class="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-slate-400 text-[10px]"></i> ${task.start} – ${task.end}
                   </span>
-                  <span class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-semibold border ${badgeClass}">${task.priority}</span>
-                  <span class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-slate-100 text-slate-600">${task.category || 'General'}</span>
-                  ${task.isRecurring ? '<span class="text-[9px] text-indigo-600 flex items-center gap-1 font-medium"><i class="fa-solid fa-repeat text-[8px]"></i> Habit</span>' : ''}
+                  <span class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-600">${task.category}</span>
                 </div>
-                <h4 class="text-xs sm:text-sm font-semibold text-slate-900 truncate leading-snug ${task.completed ? 'task-completed text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
+                <h4 class="text-xs sm:text-sm font-semibold text-slate-900 truncate ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
                 ${task.notes ? `<p class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtml(task.notes)}</p>` : ''}
               </div>
             </div>
-
             <div class="flex items-center gap-1 flex-shrink-0">
-              <button onclick="DayTracker.editTask('${task.id}')" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-100 active:scale-90 transition" title="Edit">
-                <i class="fa-solid fa-pen-to-square text-xs"></i>
-              </button>
-              <button onclick="DayTracker.deleteTask('${task.id}')" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-slate-100 active:scale-90 transition" title="Delete">
-                <i class="fa-solid fa-trash-can text-xs"></i>
-              </button>
+              <button onclick="App.openPersonalTaskModal('${task.id}')" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+              <button onclick="App.deletePersonalTask('${task.id}')" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
             </div>
           `;
           taskListEl.appendChild(card);
         });
 
-        updateDailyMetrics();
+        updatePersonalMetrics();
       }
 
-      function updateDailyMetrics() {
-        const dayTasks = state.tasksByDate[currentDate] || [];
+      function updatePersonalMetrics() {
+        const dayTasks = state.personal.tasksByDate[currentDate] || [];
         const total = dayTasks.length;
         const achieved = dayTasks.filter(t => t.completed).length;
         const rate = total === 0 ? 0 : Math.round((achieved / total) * 100);
@@ -1073,185 +1386,121 @@
         document.getElementById('progress-percentage-label').innerText = `${rate}%`;
         document.getElementById('progress-bar-fill').style.width = `${rate}%`;
 
-        const subtext = document.getElementById('progress-subtext');
-        if (total === 0) {
-          subtext.innerText = 'No tasks scheduled yet. Start scheduling your morning and afternoon blocks.';
-        } else if (rate === 100) {
-          subtext.innerText = '🎉 Outstanding! All scheduled slots completed!';
-        } else {
-          subtext.innerText = `${achieved} of ${total} slots achieved. Real-time synced to passcode.`;
+        let streak = 0;
+        let d = new Date();
+        for (let i = 0; i < 365; i++) {
+          const dateStr = getFormattedDate(d);
+          const tasks = state.personal.tasksByDate[dateStr] || [];
+          if (tasks.length > 0 && (tasks.filter(t => t.completed).length / tasks.length) >= 0.6) {
+            streak++;
+          } else if (i !== 0 || tasks.length > 0) {
+            break;
+          }
+          d.setDate(d.getDate() - 1);
         }
-
-        const streak = calculateStreak();
         document.getElementById('stat-streak').innerText = `${streak}d`;
         document.getElementById('kpi-streak').innerText = `${streak} Days`;
       }
 
-      function calculateStreak() {
-        let streak = 0;
-        let d = new Date();
-        
-        for (let i = 0; i < 365; i++) {
-          const dateStr = getFormattedDate(d);
-          const tasks = state.tasksByDate[dateStr] || [];
-          const record = state.history[dateStr];
-          
-          const wasSuccessful = (record && record.rate >= 60) || (tasks.length > 0 && (tasks.filter(t => t.completed).length / tasks.length) >= 0.6);
-          if (wasSuccessful) {
-            streak++;
-          } else {
-            if (i === 0 && tasks.length === 0) {
-            } else {
-              break;
-            }
-          }
-          d.setDate(d.getDate() - 1);
-        }
-        return streak;
-      }
-
-      function toggleTask(id) {
-        const dayTasks = state.tasksByDate[currentDate] || [];
+      function togglePersonalTask(id) {
+        const dayTasks = state.personal.tasksByDate[currentDate] || [];
         const task = dayTasks.find(t => t.id === id);
         if (task) {
           task.completed = !task.completed;
-          renderDayTasks();
-          broadcastDateSync(currentDate);
-
+          renderPersonalDayTasks();
+          broadcastFullState();
           if (task.completed) {
-            try {
-              confetti({
-                particleCount: 30,
-                spread: 50,
-                origin: { y: 0.75 },
-                colors: ['#6366f1', '#10b981', '#f59e0b']
-              });
-            } catch(e) {}
-            showToast('Time slot achieved! Synced ✨');
+            confetti({ particleCount: 30, spread: 50, origin: { y: 0.75 }, colors: ['#6366f1', '#10b981', '#f59e0b'] });
+            showToast('Time slot completed! 🎉');
           }
         }
       }
 
-      function deleteTask(id) {
-        let dayTasks = state.tasksByDate[currentDate] || [];
-        state.tasksByDate[currentDate] = dayTasks.filter(t => t.id !== id);
-        renderDayTasks();
-        broadcastDateSync(currentDate);
-        showToast('Task removed & synced!');
+      function deletePersonalTask(id) {
+        let dayTasks = state.personal.tasksByDate[currentDate] || [];
+        state.personal.tasksByDate[currentDate] = dayTasks.filter(t => t.id !== id);
+        renderPersonalDayTasks();
+        broadcastFullState();
+        showToast('Task removed.');
       }
 
-      function openTaskModal(editId = null) {
-        const modal = document.getElementById('modal-task');
-        const modalTitle = document.getElementById('modal-task-title');
-        const form = document.getElementById('form-task');
+      function openPersonalTaskModal(editId = null) {
+        const modal = document.getElementById('modal-personal-task');
+        const form = document.getElementById('form-personal-task');
         form.reset();
 
         if (editId) {
-          modalTitle.innerText = 'Edit Time Slot';
-          const task = (state.tasksByDate[currentDate] || []).find(t => t.id === editId);
+          document.getElementById('personal-task-modal-title').innerText = 'Edit Time Slot';
+          const task = (state.personal.tasksByDate[currentDate] || []).find(t => t.id === editId);
           if (task) {
-            document.getElementById('task-id').value = task.id;
-            document.getElementById('task-input-title').value = task.title;
-            document.getElementById('task-input-date').value = task.date || currentDate;
-            document.getElementById('task-input-start').value = task.start;
-            document.getElementById('task-input-end').value = task.end;
-            document.getElementById('task-input-priority').value = task.priority;
-            document.getElementById('task-input-category').value = task.category;
-            document.getElementById('task-input-notes').value = task.notes || '';
-            document.getElementById('task-input-recurring').checked = !!task.isRecurring;
+            document.getElementById('personal-task-id').value = task.id;
+            document.getElementById('personal-input-title').value = task.title;
+            document.getElementById('personal-input-date').value = currentDate;
+            document.getElementById('personal-input-start').value = task.start;
+            document.getElementById('personal-input-end').value = task.end;
+            document.getElementById('personal-input-priority').value = task.priority;
+            document.getElementById('personal-input-category').value = task.category;
+            document.getElementById('personal-input-notes').value = task.notes || '';
           }
         } else {
-          modalTitle.innerText = 'Schedule Time Slot';
-          document.getElementById('task-id').value = '';
-          document.getElementById('task-input-date').value = currentDate;
+          document.getElementById('personal-task-modal-title').innerText = 'Schedule Time Slot';
+          document.getElementById('personal-task-id').value = '';
+          document.getElementById('personal-input-date').value = currentDate;
           const now = new Date();
           const curHours = String(now.getHours()).padStart(2, '0');
           const nextHours = String((now.getHours() + 1) % 24).padStart(2, '0');
-          document.getElementById('task-input-start').value = `${curHours}:00`;
-          document.getElementById('task-input-end').value = `${nextHours}:00`;
+          document.getElementById('personal-input-start').value = `${curHours}:00`;
+          document.getElementById('personal-input-end').value = `${nextHours}:00`;
         }
-
         modal.classList.remove('hidden');
       }
 
-      function closeTaskModal() {
-        document.getElementById('modal-task').classList.add('hidden');
+      function closePersonalTaskModal() {
+        document.getElementById('modal-personal-task').classList.add('hidden');
       }
 
-      function handleSaveTask(e) {
+      function savePersonalTask(e) {
         e.preventDefault();
-        const id = document.getElementById('task-id').value;
-        const title = document.getElementById('task-input-title').value.trim();
-        const taskDate = document.getElementById('task-input-date').value || currentDate;
-        const start = document.getElementById('task-input-start').value;
-        const end = document.getElementById('task-input-end').value;
-        const priority = document.getElementById('task-input-priority').value;
-        const category = document.getElementById('task-input-category').value;
-        const notes = document.getElementById('task-input-notes').value.trim();
-        const isRecurring = document.getElementById('task-input-recurring').checked;
+        const id = document.getElementById('personal-task-id').value;
+        const title = document.getElementById('personal-input-title').value.trim();
+        const taskDate = document.getElementById('personal-input-date').value || currentDate;
+        const start = document.getElementById('personal-input-start').value;
+        const end = document.getElementById('personal-input-end').value;
+        const priority = document.getElementById('personal-input-priority').value;
+        const category = document.getElementById('personal-input-category').value;
+        const notes = document.getElementById('personal-input-notes').value.trim();
 
-        if (!title || !start || !end || !taskDate) return;
-
-        if (!state.tasksByDate[taskDate]) {
-          state.tasksByDate[taskDate] = [];
-        }
+        if (!state.personal.tasksByDate[taskDate]) state.personal.tasksByDate[taskDate] = [];
 
         if (id) {
-          if (taskDate !== currentDate && state.tasksByDate[currentDate]) {
-            state.tasksByDate[currentDate] = state.tasksByDate[currentDate].filter(t => t.id !== id);
+          const idx = state.personal.tasksByDate[taskDate].findIndex(t => t.id === id);
+          if (idx !== -1) {
+            state.personal.tasksByDate[taskDate][idx] = { ...state.personal.tasksByDate[taskDate][idx], title, start, end, priority, category, notes };
           }
-
-          const index = state.tasksByDate[taskDate].findIndex(t => t.id === id);
-          const taskObj = {
-            id, title, date: taskDate, start, end, priority, category, notes, isRecurring,
+        } else {
+          state.personal.tasksByDate[taskDate].push({
+            id: 'pt_' + Date.now(),
+            title, start, end, priority, category, notes,
             completed: false
-          };
-          if (index !== -1) {
-            state.tasksByDate[taskDate][index] = { ...state.tasksByDate[taskDate][index], ...taskObj };
-          } else {
-            state.tasksByDate[taskDate].push(taskObj);
-          }
-        } else {
-          const newTask = {
-            id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
-            title,
-            date: taskDate,
-            start, end, priority, category, notes,
-            completed: false,
-            isRecurring
-          };
-          state.tasksByDate[taskDate].push(newTask);
-
-          if (isRecurring) {
-            if (!state.habits.some(h => h.title.toLowerCase() === title.toLowerCase())) {
-              state.habits.push({ id: 'h_' + Date.now(), title, start, end, priority, category });
-              renderHabitsBank();
-            }
-          }
+          });
         }
 
-        closeTaskModal();
-        
-        if (currentDate === taskDate) {
-          renderDayTasks();
-        } else {
-          showToast(`Saved to ${taskDate} & synced!`);
-        }
-
-        broadcastDateSync(taskDate);
+        closePersonalTaskModal();
+        if (currentDate === taskDate) renderPersonalDayTasks();
+        broadcastFullState();
+        showToast('Saved & live synced!');
       }
 
       function renderHabitsBank() {
         const container = document.getElementById('quick-habits-container');
         const masterList = document.getElementById('master-habits-list');
-
         container.innerHTML = '';
         masterList.innerHTML = '';
 
-        state.habits.forEach(habit => {
+        state.personal.habits.forEach(habit => {
           const item = document.createElement('button');
           item.type = 'button';
-          item.className = 'w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-between text-xs transition active:scale-98 group';
+          item.className = 'w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-between text-xs transition group';
           item.innerHTML = `
             <div class="truncate">
               <span class="font-semibold text-slate-800">${escapeHtml(habit.title)}</span>
@@ -1259,317 +1508,807 @@
             </div>
             <i class="fa-solid fa-plus text-slate-400 group-hover:text-indigo-600 transition flex-shrink-0 text-xs"></i>
           `;
-          item.onclick = () => injectHabitToDay(habit);
+          item.onclick = () => {
+            if (!state.personal.tasksByDate[currentDate]) state.personal.tasksByDate[currentDate] = [];
+            state.personal.tasksByDate[currentDate].push({
+              id: 'pt_' + Date.now(),
+              title: habit.title,
+              start: habit.start,
+              end: habit.end,
+              priority: habit.priority,
+              category: habit.category,
+              notes: 'Daily habit',
+              completed: false
+            });
+            renderPersonalDayTasks();
+            broadcastFullState();
+            showToast(`Added "${habit.title}"`);
+          };
           container.appendChild(item);
 
           const mItem = document.createElement('div');
-          mItem.className = 'p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs bg-slate-50/60';
+          mItem.className = 'p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs bg-slate-50';
           mItem.innerHTML = `
             <div class="truncate mr-2">
               <p class="font-bold text-slate-800 truncate">${escapeHtml(habit.title)}</p>
-              <p class="text-[11px] text-slate-500">${habit.start} - ${habit.end} (${habit.priority})</p>
+              <p class="text-[11px] text-slate-500">${habit.start} - ${habit.end}</p>
             </div>
-            <button onclick="DayTracker.deleteHabit('${habit.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-xl active:scale-95 transition" title="Delete Habit">
-              <i class="fa-solid fa-trash-can text-xs"></i>
-            </button>
+            <button onclick="App.deleteHabitFromBank('${habit.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
           `;
           masterList.appendChild(mItem);
         });
       }
 
-      function injectHabitToDay(habit) {
-        if (!state.tasksByDate[currentDate]) state.tasksByDate[currentDate] = [];
-        
-        state.tasksByDate[currentDate].push({
-          id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
-          title: habit.title,
-          date: currentDate,
-          start: habit.start,
-          end: habit.end,
-          priority: habit.priority,
-          category: habit.category,
-          notes: 'Repeating habit',
-          completed: false,
-          isRecurring: true
-        });
-
-        renderDayTasks();
-        broadcastDateSync(currentDate);
-        showToast(`Added "${habit.title}"`);
+      function addHabitToBank() {
+        const title = document.getElementById('input-new-habit-title').value.trim();
+        const start = document.getElementById('input-new-habit-time').value;
+        const end = document.getElementById('input-new-habit-end-time').value;
+        if (!title) return;
+        state.personal.habits.push({ id: 'h_' + Date.now(), title, start: start || '08:00', end: end || '09:00', priority: 'Medium', category: 'Personal' });
+        renderHabitsBank();
+        broadcastFullState();
+        document.getElementById('input-new-habit-title').value = '';
+        showToast('Habit added to master bank!');
       }
 
-      function applyDefaultRecurring() {
-        if (!state.tasksByDate[currentDate]) state.tasksByDate[currentDate] = [];
-
-        state.habits.forEach(h => {
-          const exists = state.tasksByDate[currentDate].some(t => t.title.toLowerCase() === h.title.toLowerCase());
-          if (!exists) {
-            state.tasksByDate[currentDate].push({
-              id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
-              title: h.title,
-              date: currentDate,
-              start: h.start,
-              end: h.end,
-              priority: h.priority,
-              category: h.category,
-              notes: 'Daily routine template',
-              completed: false,
-              isRecurring: true
-            });
-          }
-        });
-
-        renderDayTasks();
-        broadcastDateSync(currentDate);
-        showToast('Applied recurring habits!');
-      }
-
-      function deleteHabit(habitId) {
-        state.habits = state.habits.filter(h => h.id !== habitId);
+      function deleteHabitFromBank(id) {
+        state.personal.habits = state.personal.habits.filter(h => h.id !== id);
         renderHabitsBank();
         broadcastFullState();
       }
 
+      function applyDefaultRecurringHabits() {
+        if (!state.personal.tasksByDate[currentDate]) state.personal.tasksByDate[currentDate] = [];
+        state.personal.habits.forEach(h => {
+          if (!state.personal.tasksByDate[currentDate].some(t => t.title.toLowerCase() === h.title.toLowerCase())) {
+            state.personal.tasksByDate[currentDate].push({
+              id: 'pt_' + Date.now() + Math.random().toString(36).substring(2, 5),
+              title: h.title, start: h.start, end: h.end, priority: h.priority, category: h.category, notes: 'Routine', completed: false
+            });
+          }
+        });
+        renderPersonalDayTasks();
+        broadcastFullState();
+        showToast('Applied recurring habits!');
+      }
+
       function openEndDayReview() {
-        const dayTasks = state.tasksByDate[currentDate] || [];
-        const total = dayTasks.length;
+        const dayTasks = state.personal.tasksByDate[currentDate] || [];
         const achieved = dayTasks.filter(t => t.completed).length;
-        const missed = dayTasks.filter(t => !t.completed);
+        const missed = dayTasks.filter(t => !t.completed).length;
+        const total = dayTasks.length;
         const rate = total === 0 ? 0 : Math.round((achieved / total) * 100);
 
-        document.getElementById('review-date-label').innerText = `Daily Performance Review (${currentDate})`;
+        document.getElementById('review-date-label').innerText = `Review accomplishments for ${currentDate}`;
         document.getElementById('review-achieved-val').innerText = achieved;
-        document.getElementById('review-missed-val').innerText = missed.length;
+        document.getElementById('review-missed-val').innerText = missed;
         document.getElementById('review-score-val').innerText = `${rate}%`;
-
-        const missedList = document.getElementById('review-missed-list');
-        missedList.innerHTML = '';
-        if (missed.length === 0) {
-          missedList.innerHTML = '<p class="text-emerald-600 font-bold text-xs py-2">✨ 100% Achieved! Every planned slot is finished.</p>';
-        } else {
-          missed.forEach(m => {
-            const row = document.createElement('div');
-            row.className = 'flex items-center justify-between p-2 rounded-xl bg-rose-50/70 border border-rose-100';
-            row.innerHTML = `
-              <span class="font-medium text-slate-800 truncate">${escapeHtml(m.title)}</span>
-              <span class="text-[10px] text-rose-600 font-bold ml-2">${m.start}</span>
-            `;
-            missedList.appendChild(row);
-          });
-        }
-
         document.getElementById('modal-review').classList.remove('hidden');
       }
 
-      async function finalizeReview() {
-        const dayTasks = state.tasksByDate[currentDate] || [];
-        const total = dayTasks.length;
-        const achieved = dayTasks.filter(t => t.completed).length;
-        const rate = total === 0 ? 0 : Math.round((achieved / total) * 100);
+      function closeEndDayReview() {
+        document.getElementById('modal-review').classList.add('hidden');
+      }
 
-        state.history[currentDate] = {
-          date: currentDate,
-          total,
-          achieved,
-          rate,
-          timestamp: Date.now()
-        };
-
-        const shouldCarryover = document.getElementById('check-carryover').checked;
-        let tomorrowStr = null;
-
-        if (shouldCarryover) {
+      function finalizeEndDayReview() {
+        const dayTasks = state.personal.tasksByDate[currentDate] || [];
+        if (document.getElementById('check-carryover').checked) {
           const missed = dayTasks.filter(t => !t.completed);
           if (missed.length > 0) {
-            const nextDateObj = new Date(currentDate + 'T00:00:00');
-            nextDateObj.setDate(nextDateObj.getDate() + 1);
-            tomorrowStr = getFormattedDate(nextDateObj);
-
-            if (!state.tasksByDate[tomorrowStr]) state.tasksByDate[tomorrowStr] = [];
+            const nextD = new Date(currentDate + 'T00:00:00');
+            nextD.setDate(nextD.getDate() + 1);
+            const tomorrowStr = getFormattedDate(nextD);
+            if (!state.personal.tasksByDate[tomorrowStr]) state.personal.tasksByDate[tomorrowStr] = [];
             missed.forEach(m => {
-              state.tasksByDate[tomorrowStr].push({
-                ...m,
-                id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
-                date: tomorrowStr,
-                notes: (m.notes ? m.notes + ' • ' : '') + 'Carried over from ' + currentDate,
-                completed: false
-              });
+              state.personal.tasksByDate[tomorrowStr].push({ ...m, id: 'pt_' + Date.now() + Math.random().toString(36).substring(2, 5), completed: false });
             });
           }
         }
-
-        document.getElementById('modal-review').classList.add('hidden');
-        await broadcastFullState();
-
-        showToast('Day archived and carried forward!');
-        updateDailyMetrics();
+        closeEndDayReview();
+        broadcastFullState();
+        showToast('Day finalized & archived!');
       }
 
-      function renderAnalytics() {
-        let totalAchievedCount = 0;
-        let totalFocusMinutes = 0;
-
-        Object.keys(state.tasksByDate).forEach(d => {
-          (state.tasksByDate[d] || []).forEach(task => {
-            if (task.completed) {
-              totalAchievedCount++;
-              if (task.start && task.end) {
-                const [sh, sm] = task.start.split(':').map(Number);
-                const [eh, em] = task.end.split(':').map(Number);
+      function renderPersonalAnalytics() {
+        let totalDone = 0;
+        let totalMins = 0;
+        Object.keys(state.personal.tasksByDate).forEach(d => {
+          (state.personal.tasksByDate[d] || []).forEach(t => {
+            if (t.completed) {
+              totalDone++;
+              if (t.start && t.end) {
+                const [sh, sm] = t.start.split(':').map(Number);
+                const [eh, em] = t.end.split(':').map(Number);
                 const diff = (eh * 60 + em) - (sh * 60 + sm);
-                if (diff > 0) totalFocusMinutes += diff;
+                if (diff > 0) totalMins += diff;
               }
             }
           });
         });
 
-        document.getElementById('kpi-total-achieved').innerText = totalAchievedCount;
-        document.getElementById('kpi-focus-hours').innerText = `${Math.round(totalFocusMinutes / 60)}h`;
+        document.getElementById('kpi-total-achieved').innerText = totalDone;
+        document.getElementById('kpi-focus-hours').innerText = `${Math.round(totalMins / 60)}h`;
 
         const labels = [];
         const dataScores = [];
-        const daysToInspect = chartRange === 'week' ? 7 : 30;
-
-        const baseDate = new Date();
-        for (let i = daysToInspect - 1; i >= 0; i--) {
-          const d = new Date(baseDate);
-          d.setDate(baseDate.getDate() - i);
+        const base = new Date();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(base);
+          d.setDate(base.getDate() - i);
           const dStr = getFormattedDate(d);
-          
-          if (chartRange === 'week') {
-            labels.push(d.toLocaleDateString('en-US', { weekday: 'narrow', month: 'numeric', day: 'numeric' }));
-          } else {
-            labels.push(d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }));
-          }
-
-          if (state.history[dStr]) {
-            dataScores.push(state.history[dStr].rate);
-          } else if (state.tasksByDate[dStr] && state.tasksByDate[dStr].length > 0) {
-            const count = state.tasksByDate[dStr].length;
-            const done = state.tasksByDate[dStr].filter(t => t.completed).length;
-            dataScores.push(Math.round((done / count) * 100));
-          } else {
-            dataScores.push(0);
-          }
+          labels.push(d.toLocaleDateString('en-US', { weekday: 'narrow', month: 'numeric', day: 'numeric' }));
+          const tasks = state.personal.tasksByDate[dStr] || [];
+          dataScores.push(tasks.length ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) : 0);
         }
 
-        const nonZeroScores = dataScores.filter(s => s > 0);
-        const avgScore = nonZeroScores.length ? Math.round(nonZeroScores.reduce((a,b)=>a+b,0) / nonZeroScores.length) : 0;
-        document.getElementById('kpi-weekly-avg').innerText = `${avgScore}%`;
+        const valid = dataScores.filter(s => s > 0);
+        document.getElementById('kpi-weekly-avg').innerText = `${valid.length ? Math.round(valid.reduce((a,b)=>a+b,0) / valid.length) : 0}%`;
 
         const ctx = document.getElementById('achievementChart').getContext('2d');
-        if (chartInstance) {
-          chartInstance.destroy();
-        }
-
-        document.getElementById('chart-main-title').innerText = chartRange === 'week' 
-          ? '7-Day Completion Rate (%)' 
-          : '30-Day Completion Trend (%)';
-
-        chartInstance = new Chart(ctx, {
+        if (personalChartInstance) personalChartInstance.destroy();
+        personalChartInstance = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: labels,
+            labels,
             datasets: [{
               label: 'Achievement %',
               data: dataScores,
-              backgroundColor: dataScores.map(val => val >= 80 ? 'rgba(99, 102, 241, 0.9)' : 'rgba(165, 180, 252, 0.8)'),
-              hoverBackgroundColor: '#4f46e5',
-              borderRadius: 6,
-              borderSkipped: false,
+              backgroundColor: 'rgba(99, 102, 241, 0.85)',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 100 } }
+          }
+        });
+      }
+
+      // ================= OFFICE PRO WORKSPACE LOGIC =================
+      const officeCategoryStyles = {
+        'todo': { badge: 'bg-blue-100 text-blue-700', icon: 'fa-pen', label: 'To-Do' },
+        'followup': { badge: 'bg-purple-100 text-purple-700', icon: 'fa-reply', label: 'Follow-up' },
+        'initiate': { badge: 'bg-emerald-100 text-emerald-700', icon: 'fa-rocket', label: 'Initiate' },
+        'meeting': { badge: 'bg-amber-100 text-amber-800', icon: 'fa-users', label: 'Meeting' },
+        'approval': { badge: 'bg-rose-100 text-rose-700', icon: 'fa-stamp', label: 'Approval' },
+        'budget': { badge: 'bg-cyan-100 text-cyan-800', icon: 'fa-indian-rupee-sign', label: 'Budget' },
+        'deadline': { badge: 'bg-red-100 text-red-800', icon: 'fa-flag', label: 'Deadline' }
+      };
+
+      function switchOfficeSubView(subView) {
+        ['dashboard', 'tasks', 'calendar', 'meetings', 'approvals', 'budget', 'recurring'].forEach(v => {
+          const el = document.getElementById(`office-view-${v}`);
+          const navBtn = document.getElementById(`nav-office-${v}`);
+          if (v === subView) {
+            el.classList.remove('hidden');
+            navBtn.className = 'px-3 py-2 rounded-xl bg-blue-600 text-white transition flex items-center gap-1.5 shadow-xs font-bold';
+          } else {
+            el.classList.add('hidden');
+            navBtn.className = 'px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 font-bold';
+          }
+        });
+
+        if (subView === 'dashboard') renderOfficeDashboard();
+        else if (subView === 'tasks') renderOfficeKanban();
+        else if (subView === 'calendar') renderOfficeCalendar();
+        else if (subView === 'meetings') renderOfficeMeetings();
+        else if (subView === 'approvals') renderOfficeApprovals();
+        else if (subView === 'budget') renderOfficeBudget();
+        else if (subView === 'recurring') renderOfficeRecurring();
+      }
+
+      function renderOfficeDashboard() {
+        const todayStr = getFormattedDate(new Date());
+        document.getElementById('office-today-badge').innerText = `Date: ${todayStr}`;
+
+        const tasks = state.office.tasks;
+        const dueToday = tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed');
+        const overdue = tasks.filter(t => t.dueDate < todayStr && t.status !== 'completed');
+        const pendingApprovals = tasks.filter(t => t.category === 'approval' && t.status !== 'completed');
+        
+        const totalBudget = tasks.filter(t => t.status !== 'completed').reduce((acc, t) => acc + (Number(t.budget) || 0), 0);
+
+        document.getElementById('office-kpi-today').innerText = dueToday.length;
+        document.getElementById('office-kpi-overdue').innerText = overdue.length;
+        document.getElementById('office-kpi-approvals').innerText = pendingApprovals.length;
+        document.getElementById('office-kpi-budget').innerText = formatINR(totalBudget);
+
+        // Render Today Action Items
+        const todayContainer = document.getElementById('office-today-tasks-container');
+        todayContainer.innerHTML = '';
+        if (dueToday.length === 0) {
+          todayContainer.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center italic">No tasks due today. You are completely on track!</p>`;
+        } else {
+          dueToday.forEach(t => todayContainer.appendChild(createOfficeTaskCard(t)));
+        }
+
+        // Render Upcoming 7 Days
+        const upcomingContainer = document.getElementById('office-upcoming-container');
+        upcomingContainer.innerHTML = '';
+        const weekEnd = new Date();
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const upcoming = tasks.filter(t => {
+          const td = new Date(t.dueDate);
+          return td > new Date(todayStr) && td <= weekEnd && t.status !== 'completed';
+        });
+
+        if (upcoming.length === 0) {
+          upcomingContainer.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center italic">No pending deadlines in the next 7 days.</p>`;
+        } else {
+          upcoming.forEach(t => {
+            const row = document.createElement('div');
+            row.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs task-card-hover';
+            row.innerHTML = `
+              <div class="truncate mr-2">
+                <span class="font-bold text-slate-800 truncate block">${escapeHtml(t.title)}</span>
+                <span class="text-[10px] text-slate-500">${t.dueDate} • ${t.assignee || 'Unassigned'}</span>
+              </div>
+              <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md shrink-0">${t.category.toUpperCase()}</span>
+            `;
+            upcomingContainer.appendChild(row);
+          });
+        }
+      }
+
+      function createOfficeTaskCard(task) {
+        const cat = officeCategoryStyles[task.category] || officeCategoryStyles.todo;
+        const card = document.createElement('div');
+        card.className = `p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-2xs space-y-2 task-card-hover border-l-4 ${task.priority === 'high' ? 'border-l-rose-500' : task.priority === 'medium' ? 'border-l-amber-500' : 'border-l-emerald-500'}`;
+
+        let commentsCount = (task.updates && task.updates.length) ? `<span class="text-[10px] text-blue-600 font-semibold flex items-center gap-1"><i class="fa-regular fa-comments"></i> ${task.updates.length} updates</span>` : '';
+        let budgetHtml = task.budget ? `<span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">${formatINR(task.budget)}</span>` : '';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${cat.badge}">
+              <i class="fa-solid ${cat.icon} mr-1"></i> ${cat.label}
+            </span>
+            <div class="flex items-center gap-1">
+              ${budgetHtml}
+              <button onclick="App.openOfficeTaskModal('${task.id}')" class="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+              <button onclick="App.deleteOfficeTask('${task.id}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-slate-900 leading-snug ${task.status === 'completed' ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
+            ${task.description ? `<p class="text-[11px] text-slate-500 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>` : ''}
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] text-slate-500">
+            <div class="flex items-center gap-2">
+              <span><i class="fa-regular fa-calendar"></i> ${task.dueDate}</span>
+              ${task.assignee ? `<span><i class="fa-solid fa-user text-slate-400"></i> ${escapeHtml(task.assignee)}</span>` : ''}
+              ${commentsCount}
+            </div>
+            <button onclick="App.cycleOfficeTaskStatus('${task.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold rounded-lg transition">
+              ${task.status === 'completed' ? 'Mark Pending' : task.status === 'waiting' ? 'Mark Done' : 'Start &rarr;'}
+            </button>
+          </div>
+        `;
+        return card;
+      }
+
+      function renderOfficeKanban() {
+        const catFilter = document.getElementById('office-filter-category').value;
+        const priFilter = document.getElementById('office-filter-priority').value;
+        const search = (document.getElementById('office-filter-search').value || '').toLowerCase();
+
+        const colP = document.getElementById('col-kanban-pending');
+        const colW = document.getElementById('col-kanban-waiting');
+        const colC = document.getElementById('col-kanban-completed');
+        colP.innerHTML = ''; colW.innerHTML = ''; colC.innerHTML = '';
+
+        let counts = { pending: 0, waiting: 0, completed: 0 };
+
+        state.office.tasks.filter(t => {
+          if (catFilter && t.category !== catFilter) return false;
+          if (priFilter && t.priority !== priFilter) return false;
+          if (search && !t.title.toLowerCase().includes(search) && !(t.assignee || '').toLowerCase().includes(search)) return false;
+          return true;
+        }).forEach(t => {
+          const card = createOfficeTaskCard(t);
+          if (t.status === 'completed') {
+            colC.appendChild(card);
+            counts.completed++;
+          } else if (t.status === 'waiting') {
+            colW.appendChild(card);
+            counts.waiting++;
+          } else {
+            colP.appendChild(card);
+            counts.pending++;
+          }
+        });
+
+        document.getElementById('badge-kanban-pending').innerText = counts.pending;
+        document.getElementById('badge-kanban-waiting').innerText = counts.waiting;
+        document.getElementById('badge-kanban-completed').innerText = counts.completed;
+      }
+
+      function cycleOfficeTaskStatus(id) {
+        const task = state.office.tasks.find(t => t.id === id);
+        if (!task) return;
+        if (task.status === 'pending') task.status = 'waiting';
+        else if (task.status === 'waiting') task.status = 'completed';
+        else task.status = 'pending';
+
+        if (task.status === 'completed') {
+          confetti({ particleCount: 35, spread: 60, origin: { y: 0.8 }, colors: ['#2563eb', '#10b981'] });
+        }
+        broadcastFullState();
+        renderOfficeKanban();
+        renderOfficeDashboard();
+      }
+
+      function openOfficeTaskModal(editId = null) {
+        const modal = document.getElementById('modal-office-task');
+        const form = document.getElementById('form-office-task');
+        form.reset();
+        const updatesSec = document.getElementById('office-updates-container');
+
+        if (editId) {
+          document.getElementById('office-task-modal-title').innerHTML = '<i class="fa-solid fa-briefcase text-blue-600"></i> Edit Office Task';
+          const task = state.office.tasks.find(t => t.id === editId);
+          if (task) {
+            document.getElementById('office-task-id').value = task.id;
+            document.getElementById('office-input-title').value = task.title;
+            document.getElementById('office-input-category').value = task.category;
+            document.getElementById('office-input-status').value = task.status;
+            document.getElementById('office-input-priority').value = task.priority;
+            document.getElementById('office-input-duedate').value = task.dueDate;
+            document.getElementById('office-input-assignee').value = task.assignee || '';
+            document.getElementById('office-input-budget').value = task.budget || '';
+            document.getElementById('office-input-description').value = task.description || '';
+
+            updatesSec.classList.remove('hidden');
+            renderOfficeTaskComments(task.updates || []);
+          }
+        } else {
+          document.getElementById('office-task-modal-title').innerHTML = '<i class="fa-solid fa-briefcase text-blue-600"></i> New Office Task';
+          document.getElementById('office-task-id').value = '';
+          document.getElementById('office-input-duedate').value = getFormattedDate(new Date());
+          updatesSec.classList.add('hidden');
+        }
+        modal.classList.remove('hidden');
+      }
+
+      function closeOfficeTaskModal() {
+        document.getElementById('modal-office-task').classList.add('hidden');
+      }
+
+      function saveOfficeTask(e) {
+        e.preventDefault();
+        const id = document.getElementById('office-task-id').value;
+        const taskData = {
+          title: document.getElementById('office-input-title').value.trim(),
+          category: document.getElementById('office-input-category').value,
+          status: document.getElementById('office-input-status').value,
+          priority: document.getElementById('office-input-priority').value,
+          dueDate: document.getElementById('office-input-duedate').value,
+          assignee: document.getElementById('office-input-assignee').value.trim(),
+          budget: document.getElementById('office-input-budget').value ? Number(document.getElementById('office-input-budget').value) : null,
+          description: document.getElementById('office-input-description').value.trim()
+        };
+
+        if (id) {
+          const idx = state.office.tasks.findIndex(t => t.id === id);
+          if (idx !== -1) {
+            state.office.tasks[idx] = { ...state.office.tasks[idx], ...taskData };
+          }
+        } else {
+          state.office.tasks.push({
+            id: 'ot_' + Date.now(),
+            updates: [],
+            ...taskData
+          });
+        }
+
+        closeOfficeTaskModal();
+        broadcastFullState();
+        renderOfficeDashboard();
+        renderOfficeKanban();
+        showToast('Office task saved & synced!');
+      }
+
+      function deleteOfficeTask(id) {
+        state.office.tasks = state.office.tasks.filter(t => t.id !== id);
+        broadcastFullState();
+        renderOfficeDashboard();
+        renderOfficeKanban();
+        showToast('Office task deleted.');
+      }
+
+      function renderOfficeTaskComments(updates) {
+        const list = document.getElementById('office-updates-list');
+        list.innerHTML = '';
+        if (!updates || updates.length === 0) {
+          list.innerHTML = `<p class="text-[11px] text-slate-400 italic">No updates logged yet.</p>`;
+          return;
+        }
+        updates.forEach(u => {
+          list.innerHTML += `
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+              <span class="font-bold text-blue-600 block text-[10px] mb-0.5">${u.ts}</span>
+              <p class="text-slate-700">${escapeHtml(u.text)}</p>
+            </div>
+          `;
+        });
+      }
+
+      function addOfficeTaskComment() {
+        const id = document.getElementById('office-task-id').value;
+        const text = document.getElementById('office-new-comment-input').value.trim();
+        if (!id || !text) return;
+        const task = state.office.tasks.find(t => t.id === id);
+        if (!task) return;
+
+        if (!task.updates) task.updates = [];
+        const ts = new Date().toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        task.updates.push({ ts, text });
+        document.getElementById('office-new-comment-input').value = '';
+        renderOfficeTaskComments(task.updates);
+        broadcastFullState();
+        showToast('Update note added!');
+      }
+
+      // ================= OFFICE WORKING DAYS & HOLIDAYS =================
+      function isWorkingDay(dStr) {
+        const d = new Date(dStr + 'T00:00:00');
+        if (!state.office.workingDays.includes(d.getDay())) return false;
+        if (state.office.holidays.some(h => h.date === dStr)) return false;
+        return true;
+      }
+
+      function getNextWorkingDay(fromStr) {
+        let d = new Date(fromStr + 'T00:00:00');
+        for (let i = 0; i < 30; i++) {
+          d.setDate(d.getDate() + 1);
+          const nextStr = getFormattedDate(d);
+          if (isWorkingDay(nextStr)) return nextStr;
+        }
+        return fromStr;
+      }
+
+      function rolloverIncompleteOfficeTasks() {
+        const todayStr = getFormattedDate(new Date());
+        const nextWorkDay = getNextWorkingDay(todayStr);
+        let count = 0;
+
+        state.office.tasks.forEach(t => {
+          if (t.status !== 'completed' && t.dueDate <= todayStr) {
+            t.dueDate = nextWorkDay;
+            count++;
+          }
+        });
+
+        if (count > 0) {
+          broadcastFullState();
+          renderOfficeDashboard();
+          renderOfficeKanban();
+          showToast(`Rolled over ${count} incomplete tasks to next working day (${nextWorkDay})!`);
+        } else {
+          showToast('No overdue or incomplete tasks to roll over.');
+        }
+      }
+
+      function renderOfficeCalendar() {
+        const yr = officeCalendarMonth.getFullYear();
+        const mo = officeCalendarMonth.getMonth();
+        document.getElementById('office-cal-month-title').innerText = officeCalendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        const firstDay = new Date(yr, mo, 1).getDay();
+        const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+        const grid = document.getElementById('office-calendar-grid');
+        grid.innerHTML = '';
+
+        let workingCount = 0;
+
+        // Empty padding cells
+        for (let i = 0; i < firstDay; i++) {
+          grid.innerHTML += `<div class="calendar-day-box p-1 bg-slate-50/50 rounded-xl border border-slate-100"></div>`;
+        }
+
+        const todayStr = getFormattedDate(new Date());
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${yr}-${String(mo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const isWork = isWorkingDay(dateStr);
+          if (isWork) workingCount++;
+
+          const holiday = state.office.holidays.find(h => h.date === dateStr);
+          const tasks = state.office.tasks.filter(t => t.dueDate === dateStr);
+          const isToday = dateStr === todayStr;
+
+          let bg = isToday ? 'bg-blue-50 border-2 border-blue-600' : holiday ? 'bg-rose-50 border-rose-200' : !isWork ? 'bg-slate-100 text-slate-400' : 'bg-white border-slate-200';
+
+          grid.innerHTML += `
+            <div onclick="App.openDayTasksFromCalendar('${dateStr}')" class="calendar-day-box p-1.5 rounded-xl border flex flex-col justify-between cursor-pointer hover:shadow-xs ${bg}">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs">${day}</span>
+                ${holiday ? `<span class="text-[8px] font-bold text-rose-600 truncate">Off</span>` : ''}
+              </div>
+              <div>
+                ${tasks.length ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-800">${tasks.length} tasks</span>` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        document.getElementById('office-working-days-tally').innerText = workingCount;
+        renderWorkingDaysAndHolidaysRules();
+      }
+
+      function prevOfficeMonth() {
+        officeCalendarMonth.setMonth(officeCalendarMonth.getMonth() - 1);
+        renderOfficeCalendar();
+      }
+
+      function nextOfficeMonth() {
+        officeCalendarMonth.setMonth(officeCalendarMonth.getMonth() + 1);
+        renderOfficeCalendar();
+      }
+
+      function resetOfficeMonthToToday() {
+        officeCalendarMonth = new Date();
+        renderOfficeCalendar();
+      }
+
+      function openDayTasksFromCalendar(dateStr) {
+        document.getElementById('office-filter-search').value = '';
+        document.getElementById('office-filter-category').value = '';
+        document.getElementById('office-filter-priority').value = '';
+        switchOfficeSubView('tasks');
+        showToast(`Viewing office deliverables for ${dateStr}`);
+      }
+
+      function renderWorkingDaysAndHolidaysRules() {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const container = document.getElementById('office-working-days-checkboxes');
+        container.innerHTML = '';
+        days.forEach((d, i) => {
+          const checked = state.office.workingDays.includes(i) ? 'checked' : '';
+          container.innerHTML += `
+            <label class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer">
+              <input type="checkbox" value="${i}" ${checked} onchange="App.toggleWorkingDayConfig(${i}, this.checked)"> ${d}
+            </label>
+          `;
+        });
+
+        const tags = document.getElementById('office-holidays-tags');
+        tags.innerHTML = '';
+        state.office.holidays.forEach(h => {
+          tags.innerHTML += `
+            <div class="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg">
+              <span>${h.date} (${escapeHtml(h.title)})</span>
+              <button onclick="App.deleteOfficeHoliday('${h.date}')" class="hover:text-rose-900 ml-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          `;
+        });
+      }
+
+      function toggleWorkingDayConfig(dayIdx, isChecked) {
+        if (isChecked && !state.office.workingDays.includes(dayIdx)) state.office.workingDays.push(dayIdx);
+        else if (!isChecked) state.office.workingDays = state.office.workingDays.filter(d => d !== dayIdx);
+        broadcastFullState();
+        renderOfficeCalendar();
+      }
+
+      function addOfficeHoliday() {
+        const d = document.getElementById('input-add-holiday-date').value;
+        const title = document.getElementById('input-add-holiday-title').value.trim() || 'Holiday';
+        if (!d) return;
+        if (!state.office.holidays.some(h => h.date === d)) {
+          state.office.holidays.push({ date: d, title });
+          document.getElementById('input-add-holiday-date').value = '';
+          document.getElementById('input-add-holiday-title').value = '';
+          broadcastFullState();
+          renderOfficeCalendar();
+          showToast('Holiday added!');
+        }
+      }
+
+      function deleteOfficeHoliday(d) {
+        state.office.holidays = state.office.holidays.filter(h => h.date !== d);
+        broadcastFullState();
+        renderOfficeCalendar();
+      }
+
+      // ================= MEETINGS, APPROVALS, BUDGET VIEWS =================
+      function renderOfficeMeetings() {
+        const container = document.getElementById('office-meetings-list');
+        container.innerHTML = '';
+        const meetings = state.office.tasks.filter(t => t.category === 'meeting');
+        if (meetings.length === 0) {
+          container.innerHTML = `<p class="text-xs text-slate-400 py-8 text-center italic">No meetings scheduled.</p>`;
+          return;
+        }
+        meetings.forEach(m => {
+          const item = document.createElement('div');
+          item.className = 'p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs task-card-hover';
+          item.innerHTML = `
+            <div class="space-y-1">
+              <h4 class="font-bold text-sm text-slate-800">${escapeHtml(m.title)}</h4>
+              <p class="text-slate-500"><i class="fa-regular fa-calendar"></i> Date: ${m.dueDate} | Stakeholder: ${m.assignee || 'General'}</p>
+              ${m.description ? `<p class="text-slate-600 italic">${escapeHtml(m.description)}</p>` : ''}
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="App.openOfficeTaskModal('${m.id}')" class="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-800 font-bold">Edit</button>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      }
+
+      function renderOfficeApprovals() {
+        const mine = document.getElementById('office-approvals-mine');
+        const others = document.getElementById('office-approvals-others');
+        mine.innerHTML = '';
+        others.innerHTML = '';
+
+        const approvals = state.office.tasks.filter(t => t.category === 'approval');
+        const myPending = approvals.filter(t => t.status === 'pending');
+        const awaiting = approvals.filter(t => t.status !== 'completed');
+
+        if (myPending.length === 0) mine.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center italic">No pending sign-offs.</p>`;
+        myPending.forEach(t => {
+          mine.innerHTML += `
+            <div class="p-3 bg-rose-50/50 border border-rose-200 rounded-xl text-xs space-y-1.5">
+              <p class="font-bold text-slate-800">${escapeHtml(t.title)}</p>
+              <p class="text-[10px] text-slate-500">From: ${t.assignee || 'Department'} | Due: ${t.dueDate}</p>
+              <div class="flex gap-2 pt-1">
+                <button onclick="App.cycleOfficeTaskStatus('${t.id}')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[10px]">Approve & Mark Done</button>
+              </div>
+            </div>
+          `;
+        });
+
+        if (awaiting.length === 0) others.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center italic">No items awaiting approval.</p>`;
+        awaiting.forEach(t => {
+          others.innerHTML += `
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+              <p class="font-bold text-slate-800">${escapeHtml(t.title)}</p>
+              <p class="text-[10px] text-blue-600 font-bold">Status: ${t.status.toUpperCase()}</p>
+            </div>
+          `;
+        });
+      }
+
+      function renderOfficeBudget() {
+        const budgetTasks = state.office.tasks.filter(t => t.budget && t.budget > 0);
+        const list = document.getElementById('office-budget-tasks-list');
+        list.innerHTML = '';
+
+        let total = 0;
+        const categoryMap = {};
+
+        budgetTasks.forEach(t => {
+          total += t.budget;
+          categoryMap[t.category] = (categoryMap[t.category] || 0) + t.budget;
+
+          list.innerHTML += `
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs task-card-hover">
+              <div>
+                <h4 class="font-bold text-slate-800">${escapeHtml(t.title)}</h4>
+                <p class="text-[10px] text-slate-500">Due: ${t.dueDate} | ${t.category.toUpperCase()}</p>
+              </div>
+              <span class="text-sm font-black text-emerald-600">${formatINR(t.budget)}</span>
+            </div>
+          `;
+        });
+
+        document.getElementById('office-budget-total-text').innerText = `Total Sanctions: ${formatINR(total)}`;
+
+        // Doughnut Chart
+        const ctx = document.getElementById('officeBudgetChart').getContext('2d');
+        if (budgetChartInstance) budgetChartInstance.destroy();
+        budgetChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(categoryMap).map(k => k.toUpperCase()),
+            datasets: [{
+              data: Object.values(categoryMap),
+              backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { display: false },
+              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
               tooltip: {
                 callbacks: {
-                  label: (context) => ` Achieved: ${context.parsed.y}%`
+                  label: (ctx) => ` ${ctx.label}: ${formatINR(ctx.raw)}`
                 }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                  callback: (value) => value + '%',
-                  font: { family: 'Inter', size: 10 }
-                },
-                grid: { color: 'rgba(226, 232, 240, 0.6)' }
-              },
-              x: {
-                grid: { display: false },
-                ticks: { font: { family: 'Inter', size: 9 }, maxRotation: 0 }
               }
             }
           }
         });
       }
 
-      function exportBackup() {
-        const payload = {
-          version: '2.0',
-          passcode: currentPasscode,
-          exportedAt: new Date().toISOString(),
-          tasksByDate: state.tasksByDate,
-          habits: state.habits,
-          history: state.history
-        };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `DayTrack_Backup_${currentDate}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast('Backup file downloaded! 💾');
+      function renderOfficeRecurring() {
+        const list = document.getElementById('office-templates-list');
+        list.innerHTML = '';
+        if (state.office.recurring.length === 0) {
+          list.innerHTML = `<p class="text-xs text-slate-400 py-4 italic">No recurring workflow templates created.</p>`;
+          return;
+        }
+        state.office.recurring.forEach(t => {
+          list.innerHTML += `
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+              <div>
+                <span class="font-bold text-slate-800 block">${escapeHtml(t.title)}</span>
+                <span class="text-[10px] text-slate-500">${t.category.toUpperCase()} • ${t.rule}</span>
+              </div>
+              <button onclick="App.deleteOfficeRecurringTemplate('${t.id}')" class="text-rose-500 hover:text-rose-700 p-2"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          `;
+        });
       }
 
-      function importBackup(event) {
-        const file = event.target.files && event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          try {
-            const data = JSON.parse(e.target.result);
-            if (data && (data.tasksByDate || data.tasks)) {
-              const incomingTasks = data.tasksByDate || data.tasks;
-              state.tasksByDate = { ...state.tasksByDate, ...incomingTasks };
-              if (data.habits && Array.isArray(data.habits)) {
-                state.habits = data.habits;
-              }
-              if (data.history) {
-                state.history = { ...state.history, ...data.history };
-              }
-              if (data.passcode) {
-                currentPasscode = data.passcode.toUpperCase().replace(/[^A-Z0-9_-]/g, '-');
-                localStorage.setItem('DAYTRACK_PASSCODE', currentPasscode);
-              }
-              saveLocal();
-              renderDayTasks();
-              renderHabitsBank();
-              broadcastFullState();
-              showToast('Backup restored & pushed to cloud! ✨');
-            } else {
-              showToast('Invalid backup file format.');
+      function addOfficeRecurringTemplate() {
+        const title = document.getElementById('tpl-office-title').value.trim();
+        const cat = document.getElementById('tpl-office-category').value;
+        const rule = document.getElementById('tpl-office-rule').value;
+        if (!title) return;
+        state.office.recurring.push({ id: 'tpl_' + Date.now(), title, category: cat, rule });
+        document.getElementById('tpl-office-title').value = '';
+        broadcastFullState();
+        renderOfficeRecurring();
+        showToast('Template added!');
+      }
+
+      function deleteOfficeRecurringTemplate(id) {
+        state.office.recurring = state.office.recurring.filter(t => t.id !== id);
+        broadcastFullState();
+        renderOfficeRecurring();
+      }
+
+      function populateMonthFromTemplates() {
+        const yr = officeCalendarMonth.getFullYear();
+        const mo = officeCalendarMonth.getMonth();
+        const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+        let count = 0;
+
+        state.office.recurring.forEach(tpl => {
+          for (let day = 1; day <= daysInMonth; day++) {
+            const dObj = new Date(yr, mo, day);
+            let targetStr = null;
+
+            if (tpl.rule === 'Daily') targetStr = getFormattedDate(dObj);
+            else if (tpl.rule.startsWith('Weekly_') && dObj.getDay() == parseInt(tpl.rule.split('_')[1])) targetStr = getFormattedDate(dObj);
+            else if (tpl.rule.startsWith('Monthly_')) {
+              const tgtDay = parseInt(tpl.rule.split('_')[1]);
+              if (tgtDay === 30 && day === daysInMonth) targetStr = getFormattedDate(dObj);
+              else if (day === tgtDay) targetStr = getFormattedDate(dObj);
             }
-          } catch (err) {
-            console.error('Import error:', err);
-            showToast('Failed to parse backup file.');
+
+            if (targetStr) {
+              const safeWorkDate = isWorkingDay(targetStr) ? targetStr : getNextWorkingDay(targetStr);
+              if (!state.office.tasks.some(x => x.templateId === tpl.id && x.dueDate === safeWorkDate)) {
+                state.office.tasks.push({
+                  id: 'ot_' + Date.now() + Math.random().toString(36).substring(2, 5),
+                  templateId: tpl.id,
+                  title: tpl.title,
+                  category: tpl.category,
+                  status: 'pending',
+                  priority: 'medium',
+                  dueDate: safeWorkDate,
+                  description: 'Recurring template deliverable'
+                });
+                count++;
+              }
+            }
           }
-          event.target.value = '';
-        };
-        reader.readAsText(file);
+        });
+
+        broadcastFullState();
+        renderOfficeDashboard();
+        renderOfficeCalendar();
+        showToast(`Populated ${count} deliverables for ${officeCalendarMonth.toLocaleDateString('en-US', { month: 'short' })}!`);
       }
 
+      // ================= PASSCODE & BACKUPS =================
       function openPasscodeModal() {
-        const input = document.getElementById('input-custom-passcode');
-        if (input) input.value = currentPasscode;
+        document.getElementById('input-custom-passcode').value = currentPasscode;
         document.getElementById('modal-passcode').classList.remove('hidden');
       }
 
@@ -1577,47 +2316,71 @@
         document.getElementById('modal-passcode').classList.add('hidden');
       }
 
-      function generateRandomPasscode() {
-        const rand = 'DAY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-        document.getElementById('input-custom-passcode').value = rand;
+      function setPasscodeQuick(code) {
+        document.getElementById('input-custom-passcode').value = code;
       }
 
-      function applyPasscode() {
+      function applyPasscodeFromInput() {
         const input = document.getElementById('input-custom-passcode');
-        const newCode = (input.value || '')
-          .trim()
-          .toUpperCase()
-          .replace(/[^A-Z0-9_-]/g, '-');
+        const code = (input.value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '-');
+        if (!code) return;
 
-        if (!newCode) {
-          showToast('Please enter a valid passcode.');
-          return;
-        }
-
-        currentPasscode = newCode;
+        currentPasscode = code;
         localStorage.setItem('DAYTRACK_PASSCODE', currentPasscode);
         closePasscodeModal();
 
         loadLocalFallback();
-        renderDayTasks();
-        renderHabitsBank();
+
+        // Check if passcode is OFFICE to trigger office mode
+        if (currentPasscode.includes('OFFICE')) {
+          switchMode('office');
+          showToast(`Unlocked Office Pro with passcode "${currentPasscode}"! 🏢`);
+        } else {
+          switchMode('personal');
+          showToast(`Connected to passcode "${currentPasscode}"`);
+        }
 
         pullLatestFromCloud(false);
         connectRealtimeListener();
-
-        showToast(`Connected to passcode "${currentPasscode}"`);
       }
 
-      function copyPasscode() {
-        const temp = document.createElement('textarea');
-        temp.value = currentPasscode;
-        document.body.appendChild(temp);
-        temp.select();
-        try {
-          document.execCommand('copy');
-          showToast('Passcode copied!');
-        } catch(e) {}
-        document.body.removeChild(temp);
+      function exportFullBackupJSON() {
+        const payload = {
+          version: '3.0',
+          passcode: currentPasscode,
+          exportedAt: new Date().toISOString(),
+          state: state
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `DayTrack_Office_Backup_${getFormattedDate(new Date())}.json`;
+        a.click();
+        showToast('Unified backup exported! 💾');
+      }
+
+      function importFullBackupJSON(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (data.state) {
+              state = data.state;
+              if (data.passcode) {
+                currentPasscode = data.passcode.toUpperCase().replace(/[^A-Z0-9_-]/g, '-');
+                localStorage.setItem('DAYTRACK_PASSCODE', currentPasscode);
+              }
+              broadcastFullState();
+              renderActiveWorkspace();
+              showToast('Backup restored successfully!');
+            }
+          } catch (err) {
+            showToast('Invalid backup file.');
+          }
+        };
+        reader.readAsText(file);
       }
 
       function escapeHtml(text) {
@@ -1629,205 +2392,89 @@
 
       function init() {
         loadLocalFallback();
-        const datePicker = document.getElementById('date-picker');
-        datePicker.value = currentDate;
-
-        ['change', 'input'].forEach(evt => {
-          datePicker.addEventListener(evt, (e) => {
-            if (e.target.value) {
-              currentDate = e.target.value;
-              renderDayTasks();
-            }
-          });
-        });
-
-        document.getElementById('btn-prev-day').addEventListener('click', () => {
-          const d = new Date(currentDate + 'T00:00:00');
-          d.setDate(d.getDate() - 1);
-          currentDate = getFormattedDate(d);
-          datePicker.value = currentDate;
-          renderDayTasks();
-        });
-
-        document.getElementById('btn-next-day').addEventListener('click', () => {
-          const d = new Date(currentDate + 'T00:00:00');
-          d.setDate(d.getDate() + 1);
-          currentDate = getFormattedDate(d);
-          datePicker.value = currentDate;
-          renderDayTasks();
-        });
-
-        document.getElementById('btn-today').addEventListener('click', () => {
-          currentDate = getFormattedDate(new Date());
-          datePicker.value = currentDate;
-          renderDayTasks();
-        });
-
-        document.getElementById('btn-plan-tomorrow').addEventListener('click', () => {
-          const d = new Date();
-          d.setDate(d.getDate() + 1);
-          currentDate = getFormattedDate(d);
-          datePicker.value = currentDate;
-          renderDayTasks();
-          showToast('Viewing tomorrow! Plan your day ahead.');
-        });
-
-        const tabPlanner = document.getElementById('tab-btn-planner');
-        const tabAnalytics = document.getElementById('tab-btn-analytics');
-        const viewPlanner = document.getElementById('view-planner');
-        const viewAnalytics = document.getElementById('view-analytics');
-
-        const switchToPlanner = () => {
-          tabPlanner.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
-          tabAnalytics.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
-          viewPlanner.classList.remove('hidden');
-          viewAnalytics.classList.add('hidden');
-          document.getElementById('nav-btn-tasks').className = 'flex flex-col items-center justify-center gap-1 text-indigo-600';
-          document.getElementById('nav-btn-analytics').className = 'flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700';
-        };
-
-        const switchToAnalytics = () => {
-          tabAnalytics.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
-          tabPlanner.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
-          viewPlanner.classList.add('hidden');
-          viewAnalytics.classList.remove('hidden');
-          document.getElementById('nav-btn-analytics').className = 'flex flex-col items-center justify-center gap-1 text-indigo-600';
-          document.getElementById('nav-btn-tasks').className = 'flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-700';
-          renderAnalytics();
-        };
-
-        tabPlanner.addEventListener('click', switchToPlanner);
-        tabAnalytics.addEventListener('click', switchToAnalytics);
-
-        document.getElementById('nav-btn-tasks').addEventListener('click', switchToPlanner);
-        document.getElementById('nav-btn-analytics').addEventListener('click', switchToAnalytics);
-        document.getElementById('nav-btn-habits').addEventListener('click', () => {
-          renderHabitsBank();
-          document.getElementById('modal-recurring').classList.remove('hidden');
-        });
-
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => {
-              b.className = 'filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition';
-            });
-            btn.className = 'filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition';
-            currentFilter = btn.dataset.filter;
-            renderDayTasks();
-          });
-        });
-
-        document.getElementById('fab-add-task').addEventListener('click', () => openTaskModal());
-        document.getElementById('btn-desktop-add-task').addEventListener('click', () => openTaskModal());
-        document.getElementById('btn-close-task-modal').addEventListener('click', closeTaskModal);
-        document.getElementById('btn-cancel-task').addEventListener('click', closeTaskModal);
-        document.getElementById('form-task').addEventListener('submit', handleSaveTask);
-
-        document.getElementById('btn-end-day').addEventListener('click', openEndDayReview);
-        document.getElementById('btn-close-review').addEventListener('click', () => document.getElementById('modal-review').classList.add('hidden'));
-        document.getElementById('btn-cancel-review').addEventListener('click', () => document.getElementById('modal-review').classList.add('hidden'));
-        document.getElementById('btn-finalize-review').addEventListener('click', finalizeReview);
-
-        const modalHabits = document.getElementById('modal-recurring');
-        const openHabitsHandler = () => {
-          renderHabitsBank();
-          modalHabits.classList.remove('hidden');
-        };
-        document.getElementById('btn-open-templates').addEventListener('click', openHabitsHandler);
-        document.getElementById('btn-edit-recurring-list').addEventListener('click', openHabitsHandler);
-        document.getElementById('btn-close-recurring').addEventListener('click', () => modalHabits.classList.add('hidden'));
-        document.getElementById('btn-done-habits').addEventListener('click', () => modalHabits.classList.add('hidden'));
-
-        document.getElementById('btn-add-habit').addEventListener('click', () => {
-          const title = document.getElementById('input-new-habit-title').value.trim();
-          const start = document.getElementById('input-new-habit-time').value;
-          const end = document.getElementById('input-new-habit-end-time').value;
-          
-          if (!title) return;
-          state.habits.push({
-            id: 'h_' + Date.now(),
-            title,
-            start: start || '08:00',
-            end: end || '09:00',
-            priority: 'Medium',
-            category: 'Personal'
-          });
-          renderHabitsBank();
-          broadcastFullState();
-          document.getElementById('input-new-habit-title').value = '';
-          showToast('Habit added to master bank!');
-        });
-
-        document.getElementById('btn-apply-all-habits').addEventListener('click', () => {
-          applyDefaultRecurring();
-          modalHabits.classList.add('hidden');
-        });
-
-        const btnWeek = document.getElementById('chart-toggle-week');
-        const btnMonth = document.getElementById('chart-toggle-month');
-        btnWeek.addEventListener('click', () => {
-          chartRange = 'week';
-          btnWeek.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs';
-          btnMonth.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900';
-          renderAnalytics();
-        });
-        btnMonth.addEventListener('click', () => {
-          chartRange = 'month';
-          btnMonth.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs';
-          btnWeek.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900';
-          renderAnalytics();
-        });
-
-        const btnInstallHeader = document.getElementById('btn-install-app');
-        const btnInstallModal = document.getElementById('btn-modal-install-app');
-        if (btnInstallHeader) btnInstallHeader.addEventListener('click', triggerPwaInstall);
-        if (btnInstallModal) btnInstallModal.addEventListener('click', triggerPwaInstall);
-
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            pullLatestFromCloud(true);
-            connectRealtimeListener();
+        document.getElementById('personal-date-picker').value = currentDate;
+        document.getElementById('personal-date-picker').addEventListener('change', (e) => {
+          if (e.target.value) {
+            currentDate = e.target.value;
+            renderPersonalDayTasks();
           }
         });
-        window.addEventListener('focus', () => {
-          pullLatestFromCloud(true);
-        });
+
+        // If passcode already has OFFICE, start in office mode
+        if (currentPasscode.includes('OFFICE')) {
+          switchMode('office');
+        } else {
+          switchMode('personal');
+        }
+
+        connectRealtimeListener();
+        pullLatestFromCloud(true);
+
+        window.addEventListener('focus', () => pullLatestFromCloud(true));
         window.addEventListener('online', () => {
           pullLatestFromCloud(true);
           connectRealtimeListener();
         });
-
-        renderDayTasks();
-        renderHabitsBank();
-        pullLatestFromCloud(true);
-        connectRealtimeListener();
       }
 
       return {
         init,
-        toggleTask,
-        deleteTask,
-        editTask: (id) => openTaskModal(id),
-        openTaskModal: () => openTaskModal(),
+        switchMode,
+        handleHeaderAddAction,
         openPasscodeModal,
         closePasscodeModal,
-        generateRandomPasscode,
-        applyPasscode,
-        copyPasscode,
-        forcePushCloud,
+        setPasscodeQuick,
+        applyPasscodeFromInput,
+        forcePushCloud: broadcastFullState,
         forcePullCloud: () => pullLatestFromCloud(false),
-        exportBackup,
-        importBackup,
-        deleteHabit,
-        applyDefaultRecurring
+        exportFullBackupJSON,
+        importFullBackupJSON,
+
+        // Personal
+        changeDate,
+        goToToday,
+        planTomorrow,
+        switchPersonalTab,
+        filterPersonalTasks,
+        togglePersonalTask,
+        deletePersonalTask,
+        openPersonalTaskModal,
+        closePersonalTaskModal,
+        savePersonalTask,
+        openHabitsModal: () => document.getElementById('modal-recurring-habits').classList.remove('hidden'),
+        closeHabitsModal: () => document.getElementById('modal-recurring-habits').classList.add('hidden'),
+        addHabitToBank,
+        deleteHabitFromBank,
+        applyDefaultRecurringHabits,
+        openEndDayReview,
+        closeEndDayReview,
+        finalizeEndDayReview,
+
+        // Office
+        switchOfficeSubView,
+        renderOfficeKanban,
+        cycleOfficeTaskStatus,
+        openOfficeTaskModal,
+        closeOfficeTaskModal,
+        saveOfficeTask,
+        deleteOfficeTask,
+        addOfficeTaskComment,
+        prevOfficeMonth,
+        nextOfficeMonth,
+        resetOfficeMonthToToday,
+        openDayTasksFromCalendar,
+        toggleWorkingDayConfig,
+        addOfficeHoliday,
+        deleteOfficeHoliday,
+        rolloverIncompleteOfficeTasks,
+        addOfficeRecurringTemplate,
+        deleteOfficeRecurringTemplate,
+        populateMonthFromTemplates
       };
     })();
 
-    window.DayTracker = DayTracker;
-
-    window.addEventListener('DOMContentLoaded', () => {
-      DayTracker.init();
-    });
+    window.App = App;
+    window.addEventListener('DOMContentLoaded', App.init);
   </script>
 </body>
 </html>
