@@ -181,9 +181,7 @@
 
     <!-- VIEW 1: Daily Schedule View -->
     <div id="view-planner" class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-      <!-- Main Timeline Section -->
       <section class="lg:col-span-8 flex flex-col gap-3.5">
-        <!-- Filter Tabs & Add Button -->
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
             <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
@@ -197,10 +195,8 @@
           </button>
         </div>
 
-        <!-- Dynamic Task List Container -->
         <div id="task-list" class="space-y-2.5 min-h-[280px]"></div>
 
-        <!-- Empty State Screen -->
         <div id="empty-state" class="hidden flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
           <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
             <i class="fa-solid fa-calendar-plus text-lg"></i>
@@ -216,7 +212,6 @@
 
       <!-- Sidebar Habits Bank -->
       <aside class="lg:col-span-4 flex flex-col gap-4">
-        <!-- Daily Progress Bar -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-2.5">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
@@ -230,7 +225,6 @@
           <p id="progress-subtext" class="text-[11px] sm:text-xs text-slate-500 leading-normal">Schedule your time blocks to maintain peak focus.</p>
         </div>
 
-        <!-- Quick Repeating Habits Bank -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-3">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
@@ -323,7 +317,7 @@
 
   <!-- ================= MODALS ================= -->
 
-  <!-- 1. MODAL: Add / Edit Task -->
+  <!-- 1. MODAL: Add / Edit Task (Includes Explicit Date Picker) -->
   <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
       <div class="sm:hidden w-full flex justify-center pt-2.5 pb-1">
@@ -331,7 +325,7 @@
       </div>
 
       <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 id="modal-task-title" class="font-bold text-slate-800 text-sm sm:text-base">Schedule New Time Slot</h3>
+        <h3 id="modal-task-title" class="font-bold text-slate-800 text-sm sm:text-base">Schedule Time Slot</h3>
         <button id="btn-close-task-modal" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95" aria-label="Close">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
@@ -339,9 +333,15 @@
 
       <form id="form-task" class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
         <input type="hidden" id="task-id">
+        
         <div>
           <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Title</label>
           <input type="text" id="task-input-title" required placeholder="e.g. Deep Work: System Spec Review" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Calendar Date</label>
+          <input type="date" id="task-input-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-bold">
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
@@ -440,7 +440,7 @@
         <div class="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 flex items-start gap-2.5">
           <i class="fa-solid fa-bell text-indigo-600 mt-0.5"></i>
           <p class="text-xs text-indigo-900 leading-relaxed">
-            <b>Consistency Tip:</b> Planning your time blocks tonight guarantees momentum tomorrow morning.
+            <b>Consistency Tip:</b> Planning your time blocks tonight guarantees clear momentum tomorrow morning.
           </p>
         </div>
 
@@ -499,7 +499,7 @@
 
       <div class="py-4 space-y-3.5">
         <p class="text-[11px] text-slate-500 leading-relaxed">
-          Enter this exact <strong>Passcode</strong> on any mobile or PC to sync all days across your calendar in real time.
+          Enter this exact <strong>Passcode</strong> on your phone and computer to link your calendar across all days.
         </p>
 
         <div>
@@ -557,7 +557,7 @@
   <!-- Hidden File Input for JSON Backup Restore -->
   <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="DayTracker.importBackup(event)" />
 
-  <!-- ================= ATOMIC MULTI-DAY CLOUD SYNC ENGINE ================= -->
+  <!-- ================= UNIFIED CROSS-DEVICE ENGINE ================= -->
   <script>
     let deferredInstallPrompt = null;
 
@@ -650,9 +650,10 @@
     }
 
     const DayTracker = (() => {
-      const myClientId = 'client_' + Math.random().toString(36).substring(2, 9);
+      const myClientId = 'cli_' + Math.random().toString(36).substring(2, 9);
       let sseConnection = null;
       let lastSyncTimestamp = 0;
+      let reconnectTimer = null;
 
       let currentPasscode = (localStorage.getItem('DAYTRACK_PASSCODE') || 'MY-PLANNER')
         .trim()
@@ -744,106 +745,116 @@
         } catch(e) {}
       }
 
-      // Sends small atomic payloads over HTTP to bypass the 4096-byte limit
+      // Sends simple standard POST without custom headers to avoid CORS preflight blocks
       async function sendCloudPayload(payload) {
         updateSyncStatus('syncing');
         const topic = getTopicName();
         try {
           const res = await fetch(`https://ntfy.sh/${topic}`, {
             method: 'POST',
-            body: JSON.stringify(payload),
-            headers: {
-              'Title': 'DayTrackSync',
-              'Tags': 'calendar,sync'
-            }
+            body: JSON.stringify(payload)
           });
           if (res.ok) {
             updateSyncStatus('synced');
             return true;
           }
         } catch (err) {
-          console.warn('Sync broadcast warning, saved locally:', err);
+          console.warn('Network send note:', err);
         }
         updateSyncStatus('synced');
         return false;
       }
 
-      // Broadcasts ONLY the updated calendar date to ensure 100% reliability
-      async function broadcastDateSync(dateStr) {
+      // Synchronizes the entire calendar state or individual date safely
+      async function broadcastFullState() {
         saveLocal();
         const payload = {
-          type: 'date_sync',
+          type: 'full_sync',
           senderId: myClientId,
           timestamp: Date.now(),
           passcode: currentPasscode,
-          date: dateStr,
-          tasks: state.tasksByDate[dateStr] || []
-        };
-        await sendCloudPayload(payload);
-      }
-
-      // Broadcasts the habit templates bank
-      async function broadcastHabitsSync() {
-        saveLocal();
-        const payload = {
-          type: 'habits_sync',
-          senderId: myClientId,
-          timestamp: Date.now(),
-          passcode: currentPasscode,
+          tasksByDate: state.tasksByDate,
           habits: state.habits,
           history: state.history
         };
-        await sendCloudPayload(payload);
+
+        const jsonStr = JSON.stringify(payload);
+        if (jsonStr.length < 3900) {
+          await sendCloudPayload(payload);
+        } else {
+          // If state is very large, broadcast each active calendar date with small safety delays
+          const dates = Object.keys(state.tasksByDate);
+          for (const d of dates) {
+            await sendCloudPayload({
+              type: 'date_sync',
+              senderId: myClientId,
+              timestamp: Date.now(),
+              passcode: currentPasscode,
+              date: d,
+              tasks: state.tasksByDate[d] || []
+            });
+            await new Promise(r => setTimeout(r, 200));
+          }
+        }
       }
 
-      // Loops through every date in state and pushes each day individually
-      async function forcePushCloud() {
+      async function broadcastDateSync(dateStr) {
         saveLocal();
-        const dates = Object.keys(state.tasksByDate);
-        if (dates.length === 0) {
-          showToast('No tasks recorded to push.');
-          return;
+        // If whole state is small, sync entire calendar so other devices receive all upcoming dates
+        const fullPayload = {
+          type: 'full_sync',
+          senderId: myClientId,
+          timestamp: Date.now(),
+          passcode: currentPasscode,
+          tasksByDate: state.tasksByDate,
+          habits: state.habits,
+          history: state.history
+        };
+        if (JSON.stringify(fullPayload).length < 3900) {
+          await sendCloudPayload(fullPayload);
+        } else {
+          await sendCloudPayload({
+            type: 'date_sync',
+            senderId: myClientId,
+            timestamp: Date.now(),
+            passcode: currentPasscode,
+            date: dateStr,
+            tasks: state.tasksByDate[dateStr] || []
+          });
         }
-
-        showToast(`Syncing all ${dates.length} calendar days... 🚀`);
-        await broadcastHabitsSync();
-
-        for (const d of dates) {
-          await broadcastDateSync(d);
-        }
-        showToast('All calendar dates synced to cloud!');
       }
 
-      // Ingests incoming packets and updates the local state
+      function forcePushCloud() {
+        broadcastFullState();
+        showToast('All calendar dates pushed to cloud! 🚀');
+      }
+
       function applyIncomingPacket(packet) {
         if (!packet) return;
         if (packet.timestamp && packet.timestamp > lastSyncTimestamp) {
           lastSyncTimestamp = packet.timestamp;
         }
 
-        if (packet.type === 'date_sync' && packet.date) {
+        if (packet.type === 'full_sync' || packet.tasksByDate) {
+          if (packet.tasksByDate) {
+            state.tasksByDate = { ...state.tasksByDate, ...packet.tasksByDate };
+          }
+          if (packet.habits && Array.isArray(packet.habits) && packet.habits.length > 0) {
+            state.habits = packet.habits;
+          }
+          if (packet.history) {
+            state.history = { ...state.history, ...packet.history };
+          }
+          saveLocal();
+          renderDayTasks();
+          renderHabitsBank();
+          updateDailyMetrics();
+        } else if (packet.type === 'date_sync' && packet.date) {
           state.tasksByDate[packet.date] = packet.tasks || [];
           saveLocal();
           if (currentDate === packet.date) {
             renderDayTasks();
           }
-          updateDailyMetrics();
-        } else if (packet.type === 'habits_sync') {
-          if (packet.habits && Array.isArray(packet.habits)) state.habits = packet.habits;
-          if (packet.history) state.history = { ...state.history, ...packet.history };
-          saveLocal();
-          renderHabitsBank();
-          updateDailyMetrics();
-        } else if (packet.tasksByDate) {
-          // Compatibility with legacy/backup blobs
-          Object.keys(packet.tasksByDate).forEach(d => {
-            state.tasksByDate[d] = packet.tasksByDate[d];
-          });
-          if (packet.habits && Array.isArray(packet.habits)) state.habits = packet.habits;
-          if (packet.history) state.history = { ...state.history, ...packet.history };
-          saveLocal();
-          renderDayTasks();
-          renderHabitsBank();
           updateDailyMetrics();
         }
 
@@ -853,19 +864,20 @@
         }
       }
 
-      // Replays all message history to assemble all calendar days
+      // Robust poll that never fails on bad syntax
       async function pullLatestFromCloud(silent = false) {
         updateSyncStatus('syncing');
         const topic = getTopicName();
 
         try {
-          const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=all`);
+          // Poll the queue without invalid duration tokens
+          const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1`);
           if (!res.ok) throw new Error('Poll failed');
 
           const text = await res.text();
           const lines = text.trim().split('\n').filter(Boolean);
 
-          let updateCount = 0;
+          let processed = 0;
           for (let i = 0; i < lines.length; i++) {
             try {
               const item = JSON.parse(lines[i]);
@@ -873,26 +885,29 @@
                 const packet = JSON.parse(item.message);
                 if (packet && (packet.type || packet.tasksByDate)) {
                   applyIncomingPacket(packet);
-                  updateCount++;
+                  processed++;
                 }
               }
             } catch(e) {}
           }
 
-          if (updateCount > 0) {
-            if (!silent) showToast(`All calendar days synced! (${updateCount} updates) ☁️`);
-          } else {
-            if (!silent) showToast('All calendar dates up to date!');
+          if (processed > 0 && !silent) {
+            showToast(`All calendar dates up to date! ☁️`);
           }
           updateSyncStatus('synced');
         } catch (err) {
-          console.warn('Initial cloud pull note:', err.message);
+          console.warn('Cloud pull note:', err.message);
           updateSyncStatus('synced');
         }
       }
 
-      // Real-time server-sent events connection
+      // Self-healing SSE connection with automatic retry
       function connectRealtimeListener() {
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+          reconnectTimer = null;
+        }
+
         if (sseConnection) {
           sseConnection.close();
           sseConnection = null;
@@ -916,16 +931,22 @@
                   showToast('Live updated from paired device! ✨');
                 }
               }
-            } catch(err) {
-              console.warn('Realtime message parse warning', err);
-            }
+            } catch(err) {}
           };
 
           sseConnection.onerror = () => {
             updateSyncStatus('syncing');
+            if (sseConnection) {
+              sseConnection.close();
+              sseConnection = null;
+            }
+            reconnectTimer = setTimeout(() => {
+              connectRealtimeListener();
+              pullLatestFromCloud(true);
+            }, 4000);
           };
         } catch(e) {
-          console.warn('SSE connection init error', e);
+          console.warn('SSE initialization note:', e);
         }
       }
 
@@ -1041,7 +1062,6 @@
             streak++;
           } else {
             if (i === 0 && tasks.length === 0) {
-              // Day in progress
             } else {
               break;
             }
@@ -1093,6 +1113,7 @@
           if (task) {
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-input-title').value = task.title;
+            document.getElementById('task-input-date').value = task.date || currentDate;
             document.getElementById('task-input-start').value = task.start;
             document.getElementById('task-input-end').value = task.end;
             document.getElementById('task-input-priority').value = task.priority;
@@ -1101,8 +1122,9 @@
             document.getElementById('task-input-recurring').checked = !!task.isRecurring;
           }
         } else {
-          modalTitle.innerText = 'Schedule New Time Slot';
+          modalTitle.innerText = 'Schedule Time Slot';
           document.getElementById('task-id').value = '';
+          document.getElementById('task-input-date').value = currentDate;
           const now = new Date();
           const curHours = String(now.getHours()).padStart(2, '0');
           const nextHours = String((now.getHours() + 1) % 24).padStart(2, '0');
@@ -1121,6 +1143,7 @@
         e.preventDefault();
         const id = document.getElementById('task-id').value;
         const title = document.getElementById('task-input-title').value.trim();
+        const taskDate = document.getElementById('task-input-date').value || currentDate;
         const start = document.getElementById('task-input-start').value;
         const end = document.getElementById('task-input-end').value;
         const priority = document.getElementById('task-input-priority').value;
@@ -1128,42 +1151,57 @@
         const notes = document.getElementById('task-input-notes').value.trim();
         const isRecurring = document.getElementById('task-input-recurring').checked;
 
-        if (!title || !start || !end) return;
+        if (!title || !start || !end || !taskDate) return;
 
-        if (!state.tasksByDate[currentDate]) {
-          state.tasksByDate[currentDate] = [];
+        if (!state.tasksByDate[taskDate]) {
+          state.tasksByDate[taskDate] = [];
         }
 
         if (id) {
-          const index = state.tasksByDate[currentDate].findIndex(t => t.id === id);
+          // If task moved to a different calendar date, delete from old date
+          if (taskDate !== currentDate && state.tasksByDate[currentDate]) {
+            state.tasksByDate[currentDate] = state.tasksByDate[currentDate].filter(t => t.id !== id);
+          }
+
+          const index = state.tasksByDate[taskDate].findIndex(t => t.id === id);
+          const taskObj = {
+            id, title, date: taskDate, start, end, priority, category, notes, isRecurring,
+            completed: false
+          };
           if (index !== -1) {
-            state.tasksByDate[currentDate][index] = {
-              ...state.tasksByDate[currentDate][index],
-              title, start, end, priority, category, notes, isRecurring
-            };
+            state.tasksByDate[taskDate][index] = { ...state.tasksByDate[taskDate][index], ...taskObj };
+          } else {
+            state.tasksByDate[taskDate].push(taskObj);
           }
         } else {
           const newTask = {
             id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
-            title, start, end, priority, category, notes,
+            title,
+            date: taskDate,
+            start, end, priority, category, notes,
             completed: false,
             isRecurring
           };
-          state.tasksByDate[currentDate].push(newTask);
+          state.tasksByDate[taskDate].push(newTask);
 
           if (isRecurring) {
             if (!state.habits.some(h => h.title.toLowerCase() === title.toLowerCase())) {
               state.habits.push({ id: 'h_' + Date.now(), title, start, end, priority, category });
               renderHabitsBank();
-              broadcastHabitsSync();
             }
           }
         }
 
         closeTaskModal();
-        renderDayTasks();
-        broadcastDateSync(currentDate);
-        showToast('Saved & live synced!');
+        
+        // If saved to currently active date view, update the list
+        if (currentDate === taskDate) {
+          renderDayTasks();
+        } else {
+          showToast(`Saved to ${taskDate} & synced!`);
+        }
+
+        broadcastDateSync(taskDate);
       }
 
       function renderHabitsBank() {
@@ -1208,6 +1246,7 @@
         state.tasksByDate[currentDate].push({
           id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
           title: habit.title,
+          date: currentDate,
           start: habit.start,
           end: habit.end,
           priority: habit.priority,
@@ -1231,6 +1270,7 @@
             state.tasksByDate[currentDate].push({
               id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
               title: h.title,
+              date: currentDate,
               start: h.start,
               end: h.end,
               priority: h.priority,
@@ -1250,7 +1290,7 @@
       function deleteHabit(habitId) {
         state.habits = state.habits.filter(h => h.id !== habitId);
         renderHabitsBank();
-        broadcastHabitsSync();
+        broadcastFullState();
       }
 
       function openEndDayReview() {
@@ -1313,6 +1353,7 @@
               state.tasksByDate[tomorrowStr].push({
                 ...m,
                 id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 6),
+                date: tomorrowStr,
                 notes: (m.notes ? m.notes + ' • ' : '') + 'Carried over from ' + currentDate,
                 completed: false
               });
@@ -1321,11 +1362,7 @@
         }
 
         document.getElementById('modal-review').classList.add('hidden');
-        await broadcastDateSync(currentDate);
-        if (tomorrowStr) {
-          await broadcastDateSync(tomorrowStr);
-        }
-        await broadcastHabitsSync();
+        await broadcastFullState();
 
         showToast('Day archived and carried forward!');
         updateDailyMetrics();
@@ -1479,7 +1516,7 @@
               saveLocal();
               renderDayTasks();
               renderHabitsBank();
-              forcePushCloud();
+              broadcastFullState();
               showToast('Backup restored & pushed to cloud! ✨');
             } else {
               showToast('Invalid backup file format.');
@@ -1528,7 +1565,7 @@
         renderDayTasks();
         renderHabitsBank();
 
-        pullLatestFromCloud(true);
+        pullLatestFromCloud(false);
         connectRealtimeListener();
 
         showToast(`Connected to passcode "${currentPasscode}"`);
@@ -1558,7 +1595,7 @@
         const datePicker = document.getElementById('date-picker');
         datePicker.value = currentDate;
 
-        // Handles both input and change so all calendar selections react immediately
+        // Instant reactivity across months and calendar picker inputs
         ['change', 'input'].forEach(evt => {
           datePicker.addEventListener(evt, (e) => {
             if (e.target.value) {
@@ -1665,7 +1702,6 @@
         document.getElementById('btn-close-recurring').addEventListener('click', () => modalHabits.classList.add('hidden'));
         document.getElementById('btn-done-habits').addEventListener('click', () => modalHabits.classList.add('hidden'));
 
-        // Captures both Start Time and End Time inputs correctly
         document.getElementById('btn-add-habit').addEventListener('click', () => {
           const title = document.getElementById('input-new-habit-title').value.trim();
           const start = document.getElementById('input-new-habit-time').value;
@@ -1681,7 +1717,7 @@
             category: 'Personal'
           });
           renderHabitsBank();
-          broadcastHabitsSync();
+          broadcastFullState();
           document.getElementById('input-new-habit-title').value = '';
           showToast('Habit added to master bank!');
         });
@@ -1711,6 +1747,16 @@
         if (btnInstallHeader) btnInstallHeader.addEventListener('click', triggerPwaInstall);
         if (btnInstallModal) btnInstallModal.addEventListener('click', triggerPwaInstall);
 
+        // Immediate background sync on tab switch or phone wake
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            pullLatestFromCloud(true);
+            connectRealtimeListener();
+          }
+        });
+        window.addEventListener('focus', () => {
+          pullLatestFromCloud(true);
+        });
         window.addEventListener('online', () => {
           pullLatestFromCloud(true);
           connectRealtimeListener();
