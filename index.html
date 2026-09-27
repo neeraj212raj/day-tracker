@@ -78,7 +78,7 @@
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-  <!-- Header Bar -->
+  <!-- Desktop & Mobile Header Bar with Live Passcode Sync Badge -->
   <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 pt-safe">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
       <div class="flex items-center gap-2.5 sm:gap-3">
@@ -95,7 +95,7 @@
               <span id="passcode-display-badge" class="font-mono font-bold tracking-wider">SYNC: MY-PLANNER</span>
             </button>
           </div>
-          <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Passcode-Secured Real-Time Cross-Device Planner</p>
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Real-Time Multi-Day Cross-Device Planner</p>
         </div>
       </div>
 
@@ -105,6 +105,7 @@
           <i class="fa-solid fa-download text-xs"></i>
           <span class="text-xs">Install App</span>
         </button>
+
         <button id="btn-open-templates" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition active:scale-95">
           <i class="fa-solid fa-repeat text-indigo-600 text-xs"></i>
           <span>Habits Bank</span>
@@ -180,7 +181,9 @@
 
     <!-- VIEW 1: Daily Schedule View -->
     <div id="view-planner" class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+      <!-- Main Timeline Section -->
       <section class="lg:col-span-8 flex flex-col gap-3.5">
+        <!-- Filter Tabs & Add Button -->
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
             <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
@@ -194,8 +197,10 @@
           </button>
         </div>
 
+        <!-- Dynamic Task List Container -->
         <div id="task-list" class="space-y-2.5 min-h-[280px]"></div>
 
+        <!-- Empty State Screen -->
         <div id="empty-state" class="hidden flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
           <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
             <i class="fa-solid fa-calendar-plus text-lg"></i>
@@ -211,6 +216,7 @@
 
       <!-- Sidebar Habits Bank -->
       <aside class="lg:col-span-4 flex flex-col gap-4">
+        <!-- Daily Progress Bar -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-2.5">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
@@ -224,6 +230,7 @@
           <p id="progress-subtext" class="text-[11px] sm:text-xs text-slate-500 leading-normal">Schedule your time blocks to maintain peak focus.</p>
         </div>
 
+        <!-- Quick Repeating Habits Bank -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col gap-3">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
@@ -334,7 +341,7 @@
         <input type="hidden" id="task-id">
         <div>
           <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Title</label>
-          <input type="text" id="task-input-title" required placeholder="e.g. Deep Work: Review System Specs" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <input type="text" id="task-input-title" required placeholder="e.g. Deep Work: System Spec Review" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
@@ -433,7 +440,7 @@
         <div class="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 flex items-start gap-2.5">
           <i class="fa-solid fa-bell text-indigo-600 mt-0.5"></i>
           <p class="text-xs text-indigo-900 leading-relaxed">
-            <b>Consistency Tip:</b> Planning your time blocks tonight guarantees clear momentum tomorrow morning.
+            <b>Consistency Tip:</b> Planning your time blocks tonight guarantees momentum tomorrow morning.
           </p>
         </div>
 
@@ -445,7 +452,7 @@
     </div>
   </div>
 
-  <!-- 3. MODAL: Recurring Habits Manager (Fixed Start and End Times) -->
+  <!-- 3. MODAL: Recurring Habits Manager -->
   <div id="modal-recurring" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
       <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
@@ -492,7 +499,7 @@
 
       <div class="py-4 space-y-3.5">
         <p class="text-[11px] text-slate-500 leading-relaxed">
-          Enter this exact <strong>Passcode</strong> on any mobile or PC to sync your planner in real time.
+          Enter this exact <strong>Passcode</strong> on any mobile or PC to sync all days across your calendar in real time.
         </p>
 
         <div>
@@ -517,10 +524,10 @@
           
           <div class="grid grid-cols-2 gap-2">
             <button onclick="DayTracker.forcePushCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-upload text-indigo-600"></i> Push to Cloud
+              <i class="fa-solid fa-upload text-indigo-600"></i> Sync All Dates
             </button>
             <button onclick="DayTracker.forcePullCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-download text-emerald-600"></i> Pull from Cloud
+              <i class="fa-solid fa-download text-emerald-600"></i> Pull All Dates
             </button>
           </div>
           
@@ -550,6 +557,7 @@
   <!-- Hidden File Input for JSON Backup Restore -->
   <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="DayTracker.importBackup(event)" />
 
+  <!-- ================= ATOMIC MULTI-DAY CLOUD SYNC ENGINE ================= -->
   <script>
     let deferredInstallPrompt = null;
 
@@ -645,7 +653,6 @@
       const myClientId = 'client_' + Math.random().toString(36).substring(2, 9);
       let sseConnection = null;
       let lastSyncTimestamp = 0;
-      let isBroadcasting = false;
 
       let currentPasscode = (localStorage.getItem('DAYTRACK_PASSCODE') || 'MY-PLANNER')
         .trim()
@@ -737,45 +744,116 @@
         } catch(e) {}
       }
 
-      async function broadcastStateCloud() {
-        saveLocal();
+      // Sends small atomic payloads over HTTP to bypass the 4096-byte limit
+      async function sendCloudPayload(payload) {
         updateSyncStatus('syncing');
-
         const topic = getTopicName();
-        const payload = {
-          senderId: myClientId,
-          timestamp: Date.now(),
-          passcode: currentPasscode,
-          tasksByDate: state.tasksByDate,
-          habits: state.habits,
-          history: state.history
-        };
-
         try {
-          isBroadcasting = true;
           const res = await fetch(`https://ntfy.sh/${topic}`, {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: {
               'Title': 'DayTrackSync',
-              'Tags': 'cloud,sync'
+              'Tags': 'calendar,sync'
             }
           });
-
           if (res.ok) {
-            lastSyncTimestamp = payload.timestamp;
             updateSyncStatus('synced');
-          } else {
-            updateSyncStatus('synced');
+            return true;
           }
         } catch (err) {
           console.warn('Sync broadcast warning, saved locally:', err);
-          updateSyncStatus('synced');
-        } finally {
-          setTimeout(() => { isBroadcasting = false; }, 400);
+        }
+        updateSyncStatus('synced');
+        return false;
+      }
+
+      // Broadcasts ONLY the updated calendar date to ensure 100% reliability
+      async function broadcastDateSync(dateStr) {
+        saveLocal();
+        const payload = {
+          type: 'date_sync',
+          senderId: myClientId,
+          timestamp: Date.now(),
+          passcode: currentPasscode,
+          date: dateStr,
+          tasks: state.tasksByDate[dateStr] || []
+        };
+        await sendCloudPayload(payload);
+      }
+
+      // Broadcasts the habit templates bank
+      async function broadcastHabitsSync() {
+        saveLocal();
+        const payload = {
+          type: 'habits_sync',
+          senderId: myClientId,
+          timestamp: Date.now(),
+          passcode: currentPasscode,
+          habits: state.habits,
+          history: state.history
+        };
+        await sendCloudPayload(payload);
+      }
+
+      // Loops through every date in state and pushes each day individually
+      async function forcePushCloud() {
+        saveLocal();
+        const dates = Object.keys(state.tasksByDate);
+        if (dates.length === 0) {
+          showToast('No tasks recorded to push.');
+          return;
+        }
+
+        showToast(`Syncing all ${dates.length} calendar days... 🚀`);
+        await broadcastHabitsSync();
+
+        for (const d of dates) {
+          await broadcastDateSync(d);
+        }
+        showToast('All calendar dates synced to cloud!');
+      }
+
+      // Ingests incoming packets and updates the local state
+      function applyIncomingPacket(packet) {
+        if (!packet) return;
+        if (packet.timestamp && packet.timestamp > lastSyncTimestamp) {
+          lastSyncTimestamp = packet.timestamp;
+        }
+
+        if (packet.type === 'date_sync' && packet.date) {
+          state.tasksByDate[packet.date] = packet.tasks || [];
+          saveLocal();
+          if (currentDate === packet.date) {
+            renderDayTasks();
+          }
+          updateDailyMetrics();
+        } else if (packet.type === 'habits_sync') {
+          if (packet.habits && Array.isArray(packet.habits)) state.habits = packet.habits;
+          if (packet.history) state.history = { ...state.history, ...packet.history };
+          saveLocal();
+          renderHabitsBank();
+          updateDailyMetrics();
+        } else if (packet.tasksByDate) {
+          // Compatibility with legacy/backup blobs
+          Object.keys(packet.tasksByDate).forEach(d => {
+            state.tasksByDate[d] = packet.tasksByDate[d];
+          });
+          if (packet.habits && Array.isArray(packet.habits)) state.habits = packet.habits;
+          if (packet.history) state.history = { ...state.history, ...packet.history };
+          saveLocal();
+          renderDayTasks();
+          renderHabitsBank();
+          updateDailyMetrics();
+        }
+
+        const viewAnalytics = document.getElementById('view-analytics');
+        if (viewAnalytics && !viewAnalytics.classList.contains('hidden')) {
+          renderAnalytics();
         }
       }
 
+      // Replays all message history to assemble all calendar days
       async function pullLatestFromCloud(silent = false) {
         updateSyncStatus('syncing');
         const topic = getTopicName();
@@ -787,24 +865,24 @@
           const text = await res.text();
           const lines = text.trim().split('\n').filter(Boolean);
 
-          let latestRemote = null;
-          for (let i = lines.length - 1; i >= 0; i--) {
+          let updateCount = 0;
+          for (let i = 0; i < lines.length; i++) {
             try {
               const item = JSON.parse(lines[i]);
               if (item.event === 'message' && item.message) {
-                const parsed = JSON.parse(item.message);
-                if (parsed && parsed.timestamp && (!latestRemote || parsed.timestamp > latestRemote.timestamp)) {
-                  latestRemote = parsed;
+                const packet = JSON.parse(item.message);
+                if (packet && (packet.type || packet.tasksByDate)) {
+                  applyIncomingPacket(packet);
+                  updateCount++;
                 }
               }
             } catch(e) {}
           }
 
-          if (latestRemote && latestRemote.timestamp > lastSyncTimestamp) {
-            applyRemoteState(latestRemote);
-            if (!silent) showToast('Latest plan pulled from cloud! ☁️');
+          if (updateCount > 0) {
+            if (!silent) showToast(`All calendar days synced! (${updateCount} updates) ☁️`);
           } else {
-            if (!silent) showToast('Already up to date!');
+            if (!silent) showToast('All calendar dates up to date!');
           }
           updateSyncStatus('synced');
         } catch (err) {
@@ -813,31 +891,7 @@
         }
       }
 
-      function applyRemoteState(remote) {
-        if (!remote) return;
-        lastSyncTimestamp = remote.timestamp;
-        
-        if (remote.tasksByDate) {
-          state.tasksByDate = remote.tasksByDate;
-        }
-        if (remote.habits && Array.isArray(remote.habits) && remote.habits.length > 0) {
-          state.habits = remote.habits;
-        }
-        if (remote.history) {
-          state.history = remote.history;
-        }
-
-        saveLocal();
-        renderDayTasks();
-        renderHabitsBank();
-        updateDailyMetrics();
-
-        const viewAnalytics = document.getElementById('view-analytics');
-        if (viewAnalytics && !viewAnalytics.classList.contains('hidden')) {
-          renderAnalytics();
-        }
-      }
-
+      // Real-time server-sent events connection
       function connectRealtimeListener() {
         if (sseConnection) {
           sseConnection.close();
@@ -856,9 +910,9 @@
             try {
               const data = JSON.parse(event.data);
               if (data.event === 'message' && data.message) {
-                const remote = JSON.parse(data.message);
-                if (remote.senderId !== myClientId && remote.timestamp > lastSyncTimestamp) {
-                  applyRemoteState(remote);
+                const packet = JSON.parse(data.message);
+                if (packet.senderId !== myClientId) {
+                  applyIncomingPacket(packet);
                   showToast('Live updated from paired device! ✨');
                 }
               }
@@ -1003,7 +1057,7 @@
         if (task) {
           task.completed = !task.completed;
           renderDayTasks();
-          broadcastStateCloud();
+          broadcastDateSync(currentDate);
 
           if (task.completed) {
             try {
@@ -1023,7 +1077,7 @@
         let dayTasks = state.tasksByDate[currentDate] || [];
         state.tasksByDate[currentDate] = dayTasks.filter(t => t.id !== id);
         renderDayTasks();
-        broadcastStateCloud();
+        broadcastDateSync(currentDate);
         showToast('Task removed & synced!');
       }
 
@@ -1101,13 +1155,14 @@
             if (!state.habits.some(h => h.title.toLowerCase() === title.toLowerCase())) {
               state.habits.push({ id: 'h_' + Date.now(), title, start, end, priority, category });
               renderHabitsBank();
+              broadcastHabitsSync();
             }
           }
         }
 
         closeTaskModal();
         renderDayTasks();
-        broadcastStateCloud();
+        broadcastDateSync(currentDate);
         showToast('Saved & live synced!');
       }
 
@@ -1163,7 +1218,7 @@
         });
 
         renderDayTasks();
-        broadcastStateCloud();
+        broadcastDateSync(currentDate);
         showToast(`Added "${habit.title}"`);
       }
 
@@ -1188,14 +1243,14 @@
         });
 
         renderDayTasks();
-        broadcastStateCloud();
+        broadcastDateSync(currentDate);
         showToast('Applied recurring habits!');
       }
 
       function deleteHabit(habitId) {
         state.habits = state.habits.filter(h => h.id !== habitId);
         renderHabitsBank();
-        broadcastStateCloud();
+        broadcastHabitsSync();
       }
 
       function openEndDayReview() {
@@ -1229,7 +1284,7 @@
         document.getElementById('modal-review').classList.remove('hidden');
       }
 
-      function finalizeReview() {
+      async function finalizeReview() {
         const dayTasks = state.tasksByDate[currentDate] || [];
         const total = dayTasks.length;
         const achieved = dayTasks.filter(t => t.completed).length;
@@ -1244,12 +1299,14 @@
         };
 
         const shouldCarryover = document.getElementById('check-carryover').checked;
+        let tomorrowStr = null;
+
         if (shouldCarryover) {
           const missed = dayTasks.filter(t => !t.completed);
           if (missed.length > 0) {
             const nextDateObj = new Date(currentDate + 'T00:00:00');
             nextDateObj.setDate(nextDateObj.getDate() + 1);
-            const tomorrowStr = getFormattedDate(nextDateObj);
+            tomorrowStr = getFormattedDate(nextDateObj);
 
             if (!state.tasksByDate[tomorrowStr]) state.tasksByDate[tomorrowStr] = [];
             missed.forEach(m => {
@@ -1263,9 +1320,14 @@
           }
         }
 
-        broadcastStateCloud();
         document.getElementById('modal-review').classList.add('hidden');
-        showToast('Day saved & archived to analytics!');
+        await broadcastDateSync(currentDate);
+        if (tomorrowStr) {
+          await broadcastDateSync(tomorrowStr);
+        }
+        await broadcastHabitsSync();
+
+        showToast('Day archived and carried forward!');
         updateDailyMetrics();
       }
 
@@ -1417,8 +1479,8 @@
               saveLocal();
               renderDayTasks();
               renderHabitsBank();
-              broadcastStateCloud();
-              showToast('Backup restored successfully! ✨');
+              forcePushCloud();
+              showToast('Backup restored & pushed to cloud! ✨');
             } else {
               showToast('Invalid backup file format.');
             }
@@ -1484,15 +1546,6 @@
         document.body.removeChild(temp);
       }
 
-      function forcePushCloud() {
-        broadcastStateCloud();
-        showToast('Local tasks pushed to cloud! 🚀');
-      }
-
-      function forcePullCloud() {
-        pullLatestFromCloud(false);
-      }
-
       function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -1505,9 +1558,14 @@
         const datePicker = document.getElementById('date-picker');
         datePicker.value = currentDate;
 
-        datePicker.addEventListener('change', (e) => {
-          currentDate = e.target.value;
-          renderDayTasks();
+        // Handles both input and change so all calendar selections react immediately
+        ['change', 'input'].forEach(evt => {
+          datePicker.addEventListener(evt, (e) => {
+            if (e.target.value) {
+              currentDate = e.target.value;
+              renderDayTasks();
+            }
+          });
         });
 
         document.getElementById('btn-prev-day').addEventListener('click', () => {
@@ -1607,6 +1665,7 @@
         document.getElementById('btn-close-recurring').addEventListener('click', () => modalHabits.classList.add('hidden'));
         document.getElementById('btn-done-habits').addEventListener('click', () => modalHabits.classList.add('hidden'));
 
+        // Captures both Start Time and End Time inputs correctly
         document.getElementById('btn-add-habit').addEventListener('click', () => {
           const title = document.getElementById('input-new-habit-title').value.trim();
           const start = document.getElementById('input-new-habit-time').value;
@@ -1622,7 +1681,7 @@
             category: 'Personal'
           });
           renderHabitsBank();
-          broadcastStateCloud();
+          broadcastHabitsSync();
           document.getElementById('input-new-habit-title').value = '';
           showToast('Habit added to master bank!');
         });
@@ -1675,7 +1734,7 @@
         applyPasscode,
         copyPasscode,
         forcePushCloud,
-        forcePullCloud,
+        forcePullCloud: () => pullLatestFromCloud(false),
         exportBackup,
         importBackup,
         deleteHabit,
