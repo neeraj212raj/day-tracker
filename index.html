@@ -6,7 +6,7 @@
   <title>DayTrack Pro & Office Manager</title>
   
   <!-- PWA & Mobile Web App Meta Tags -->
-  <meta name="theme-color" content="#1e293b" />
+  <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,7 +15,7 @@
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js for Analytics & Budget Breakdown -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -33,20 +33,8 @@
         extend: {
           fontFamily: { sans: ['Inter', 'sans-serif'] },
           colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            },
-            office: {
-              50: '#f8fafc',
-              100: '#f1f5f9',
-              600: '#2563eb',
-              800: '#1e293b',
-              900: '#0f172a'
-            }
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
+            office: { 50: '#f8fafc', 100: '#f1f5f9', 600: '#2563eb', 800: '#1e293b', 900: '#0f172a' }
           }
         }
       }
@@ -65,25 +53,19 @@
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1.25rem); }
     .pt-safe { padding-top: env(safe-area-inset-top, 0.5rem); }
     
-    .view-transition {
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    .mic-recording {
+      animation: micPulse 1.2s infinite alternate;
     }
-    .task-card-hover {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    @keyframes micPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      100% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
     }
-    .task-card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-    }
-    .calendar-day-box {
-      aspect-ratio: 1;
-      transition: background-color 0.15s ease, border-color 0.15s ease;
-    }
+    .calendar-day-box { aspect-ratio: 1; }
     @media (max-width: 640px) {
       .bottom-sheet-drawer {
         border-bottom-left-radius: 0px !important;
         border-bottom-right-radius: 0px !important;
-        max-height: 92vh;
+        max-height: 94vh;
       }
     }
   </style>
@@ -94,14 +76,14 @@
   <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 pt-safe">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
       
-      <!-- Logo & Sync Pill -->
+      <!-- Brand & Sync Pill -->
       <div class="flex items-center gap-2 sm:gap-3">
         <div id="app-logo-badge" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md flex-shrink-0 cursor-pointer" onclick="App.openPasscodeModal()">
           <i id="app-logo-icon" class="fa-solid fa-list-check text-sm sm:text-base"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 id="app-main-title" class="font-bold text-sm sm:text-lg leading-tight tracking-tight text-white flex items-center gap-1.5">
+            <h1 id="app-main-title" class="font-bold text-sm sm:text-lg leading-tight tracking-tight text-white flex items-center gap-1">
               <span>DayTrack</span><span class="text-indigo-400 font-extrabold" id="app-title-suffix">Pro</span>
             </h1>
             
@@ -111,11 +93,11 @@
               <span id="passcode-display-badge" class="font-mono font-bold tracking-wider">SYNC: MY-PLANNER</span>
             </button>
           </div>
-          <p id="app-sub-status" class="text-[10px] text-slate-400 font-medium hidden sm:block">Unified Daily Planner & Office Workspace</p>
+          <p id="app-sub-status" class="text-[10px] text-slate-400 font-medium hidden sm:block">Real-Time Daily Planner & Office Task Manager</p>
         </div>
       </div>
 
-      <!-- Mode Switcher (Personal Schedule vs Office Pro) -->
+      <!-- Mode Switcher -->
       <div class="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700 text-xs font-bold">
         <button id="mode-btn-personal" onclick="App.switchMode('personal')" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-indigo-600 text-white shadow-xs transition flex items-center gap-1.5">
           <i class="fa-solid fa-clock text-[11px]"></i>
@@ -127,19 +109,14 @@
         </button>
       </div>
 
-      <!-- Header Action Buttons -->
-      <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Header Settings / Sync Actions -->
+      <div class="flex items-center gap-1.5">
         <button id="btn-install-app" class="hidden items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition">
           <i class="fa-solid fa-download text-xs"></i>
           <span class="hidden md:inline">Install</span>
         </button>
 
-        <button id="btn-header-add" onclick="App.handleHeaderAddAction()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition active:scale-95">
-          <i class="fa-solid fa-plus text-xs"></i>
-          <span id="btn-header-add-label" class="hidden sm:inline">Add Slot</span>
-        </button>
-
-        <button onclick="App.openPasscodeModal()" class="flex items-center gap-1.5 p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-700 text-xs text-slate-200 font-bold transition" title="Sync & Passcode Settings">
+        <button onclick="App.openPasscodeModal()" class="flex items-center gap-1.5 p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-xs text-slate-200 font-bold transition" title="Sync Key & Settings">
           <i class="fa-solid fa-sliders text-xs"></i>
           <span class="hidden md:inline">Sync Key</span>
         </button>
@@ -148,103 +125,108 @@
   </header>
 
   <!-- ================= WORKSPACE 1: PERSONAL DAILY PLANNER ================= -->
-  <div id="workspace-personal" class="w-full flex-1 flex flex-col view-transition">
-    <main class="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 w-full flex-1 flex flex-col gap-4 sm:gap-6 pb-24 md:pb-8">
+  <div id="workspace-personal" class="w-full flex-1 flex flex-col">
+    <main class="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-6 w-full flex-1 flex flex-col gap-3 sm:gap-5 pb-24 md:pb-8">
       
-      <!-- Top Date Navigation & Quick Progress Bar -->
-      <div class="flex flex-col gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+      <!-- FAST VOICE & TEXT QUICK-CAPTURE BAR -->
+      <div class="bg-white p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2">
+        <button id="btn-personal-voice" onclick="App.startDictation('personal-quick')" class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm sm:text-base flex-shrink-0 transition active:scale-90" title="Dictate task by voice">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+        <input type="text" id="personal-quick-input" onkeydown="if(event.key==='Enter') App.submitPersonalQuickAdd()" placeholder="Dictate or type focus block... (e.g. 10:00 Deep Work Specs)" class="flex-1 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <button onclick="App.submitPersonalQuickAdd()" class="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 flex-shrink-0 active:scale-95 shadow-xs">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span class="hidden sm:inline">Add</span>
+        </button>
+      </div>
+
+      <!-- Date Control & Progress Bar -->
+      <div class="flex flex-col gap-2.5 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
         <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div class="flex items-center gap-1.5 sm:gap-2 flex-1 justify-between sm:justify-start">
-            <button onclick="App.changeDate(-1)" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Previous Day">
+          <div class="flex items-center gap-1.5 flex-1 justify-between sm:justify-start">
+            <button onclick="App.changeDate(-1)" class="p-2 sm:p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Previous Day">
               <i class="fa-solid fa-chevron-left text-xs"></i>
             </button>
             
-            <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 flex-1 max-w-[220px] justify-center">
+            <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 flex-1 max-w-[200px] justify-center">
               <i class="fa-solid fa-calendar-day text-indigo-600 text-xs flex-shrink-0"></i>
               <input type="date" id="personal-date-picker" class="bg-transparent font-bold text-slate-800 text-xs sm:text-sm focus:outline-none cursor-pointer w-full text-center">
             </div>
             
-            <button onclick="App.changeDate(1)" class="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Next Day">
+            <button onclick="App.changeDate(1)" class="p-2 sm:p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 active:scale-95 transition" aria-label="Next Day">
               <i class="fa-solid fa-chevron-right text-xs"></i>
             </button>
           </div>
           
           <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-            <button onclick="App.goToToday()" class="flex-1 sm:flex-none px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition text-center">Today</button>
-            <button onclick="App.planTomorrow()" class="flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
-              <span>Plan Tomorrow</span>
+            <button onclick="App.goToToday()" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Today</button>
+            <button onclick="App.planTomorrow()" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> Tomorrow
             </button>
-            <button onclick="App.openEndDayReview()" class="flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-award text-xs"></i>
-              <span>End Day</span>
+            <button onclick="App.openEndDayReview()" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-award text-[11px]"></i> End Day
             </button>
           </div>
         </div>
 
         <!-- Metric Badges -->
-        <div class="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600 bg-slate-50/90 p-2.5 rounded-xl border border-slate-200">
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Done</span>
+        <div class="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <div class="flex items-center justify-center gap-1 text-center">
+            <span class="text-[10px] text-slate-400 font-bold uppercase">Done</span>
             <span class="text-xs sm:text-sm font-extrabold text-slate-900"><span id="stat-achieved-count">0</span>/<span id="stat-total-count">0</span></span>
           </div>
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left border-x border-slate-200">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Score</span>
+          <div class="flex items-center justify-center gap-1 text-center border-x border-slate-200">
+            <span class="text-[10px] text-slate-400 font-bold uppercase">Score</span>
             <span id="stat-rate" class="text-xs sm:text-sm font-extrabold text-indigo-600">0%</span>
           </div>
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-center sm:text-left">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Streak</span>
+          <div class="flex items-center justify-center gap-1 text-center">
+            <span class="text-[10px] text-slate-400 font-bold uppercase">Streak</span>
             <span id="stat-streak" class="text-xs sm:text-sm font-extrabold text-amber-500">0d</span>
           </div>
         </div>
       </div>
 
-      <!-- Schedule vs Analytics Tab Navigation -->
+      <!-- Schedule vs Analytics Tabs -->
       <div class="flex border-b border-slate-200 text-sm font-semibold gap-6">
-        <button id="personal-tab-schedule" onclick="App.switchPersonalTab('schedule')" class="pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition">
-          <i class="fa-solid fa-clock text-xs"></i> Time-Blocked Schedule
+        <button id="personal-tab-schedule" onclick="App.switchPersonalTab('schedule')" class="pb-2.5 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-clock text-xs"></i> Schedule
         </button>
-        <button id="personal-tab-analytics" onclick="App.switchPersonalTab('analytics')" class="pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition">
-          <i class="fa-solid fa-chart-column text-xs"></i> Analytics & Trends
+        <button id="personal-tab-analytics" onclick="App.switchPersonalTab('analytics')" class="pb-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-chart-column text-xs"></i> Trends
         </button>
       </div>
 
       <!-- TAB 1: Time Blocked Schedule -->
-      <div id="personal-view-schedule" class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-        <section class="lg:col-span-8 flex flex-col gap-3.5">
+      <div id="personal-view-schedule" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <section class="lg:col-span-8 flex flex-col gap-3">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-2xs">
-              <button data-filter="all" onclick="App.filterPersonalTasks('all')" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
-              <button data-filter="pending" onclick="App.filterPersonalTasks('pending')" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Pending</button>
-              <button data-filter="completed" onclick="App.filterPersonalTasks('completed')" class="filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Achieved</button>
+              <button data-filter="all" onclick="App.filterPersonalTasks('all')" class="filter-btn px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
+              <button data-filter="pending" onclick="App.filterPersonalTasks('pending')" class="filter-btn px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition">Pending</button>
+              <button data-filter="completed" onclick="App.filterPersonalTasks('completed')" class="filter-btn px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition">Achieved</button>
             </div>
-
-            <button onclick="App.openPersonalTaskModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-100 flex items-center gap-2 transition active:scale-95">
-              <i class="fa-solid fa-plus text-xs"></i>
-              <span>Add Time Slot</span>
+            <button onclick="App.openPersonalTaskModal()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <i class="fa-solid fa-sliders"></i> Full Details Form
             </button>
           </div>
 
-          <div id="personal-task-list" class="space-y-2.5 min-h-[260px]"></div>
+          <div id="personal-task-list" class="space-y-2 min-h-[220px]"></div>
 
-          <div id="personal-empty-state" class="hidden flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
-              <i class="fa-solid fa-calendar-plus text-lg"></i>
+          <div id="personal-empty-state" class="hidden flex-col items-center justify-center p-8 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
+              <i class="fa-solid fa-microphone text-base"></i>
             </div>
-            <h3 class="font-bold text-slate-800 text-sm sm:text-base">No time blocks for this day</h3>
-            <p class="text-xs text-slate-500 max-w-xs mt-1 mb-4">Add your first time block or insert your recurring routine habits.</p>
-            <div class="flex gap-2">
-              <button onclick="App.openPersonalTaskModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 active:scale-95 transition">Add Slot</button>
-              <button onclick="App.applyDefaultRecurringHabits()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 active:scale-95 transition">Load Habits</button>
-            </div>
+            <h3 class="font-bold text-slate-800 text-sm">No time blocks yet</h3>
+            <p class="text-xs text-slate-500 max-w-xs mt-0.5 mb-3">Dictate your schedule using the microphone bar above or load routine habits.</p>
+            <button onclick="App.applyDefaultRecurringHabits()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">Load Habits Bank</button>
           </div>
         </section>
 
-        <!-- Sidebar: Completion & Habits Bank -->
-        <aside class="lg:col-span-4 flex flex-col gap-4">
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col gap-2.5">
+        <!-- Sidebar: Habits & Completion -->
+        <aside class="lg:col-span-4 flex flex-col gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
             <div class="flex items-center justify-between">
-              <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+              <h3 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-chart-pie text-indigo-600"></i> Daily Completion
               </h3>
               <span id="progress-percentage-label" class="text-xs font-black text-indigo-600">0%</span>
@@ -252,49 +234,44 @@
             <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
               <div id="progress-bar-fill" class="bg-indigo-600 h-2 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
             </div>
-            <p id="progress-subtext" class="text-[11px] text-slate-500 leading-normal">Schedule your time blocks to maintain peak daily focus.</p>
           </div>
 
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
             <div class="flex items-center justify-between">
-              <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
-                <i class="fa-solid fa-repeat text-indigo-600"></i> Repeating Habits Bank
+              <h3 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-repeat text-indigo-600"></i> Habits Bank
               </h3>
               <button onclick="App.openHabitsModal()" class="text-xs text-indigo-600 font-bold hover:underline">Manage</button>
             </div>
-            <p class="text-[11px] text-slate-500">Tap to instantly add to today's schedule:</p>
-            <div id="quick-habits-container" class="flex flex-col gap-2"></div>
+            <div id="quick-habits-container" class="space-y-1.5"></div>
           </div>
         </aside>
       </div>
 
       <!-- TAB 2: Personal Analytics -->
-      <div id="personal-view-analytics" class="hidden flex-col gap-4 sm:gap-6">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-            <span class="text-[10px] text-slate-500 font-semibold uppercase">Avg Completion</span>
-            <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1" id="kpi-weekly-avg">0%</div>
+      <div id="personal-view-analytics" class="hidden flex-col gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="bg-white p-3 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase">Avg Score</span>
+            <div class="text-lg font-black text-slate-800" id="kpi-weekly-avg">0%</div>
           </div>
-          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-            <span class="text-[10px] text-slate-500 font-semibold uppercase">Current Streak</span>
-            <div class="text-lg sm:text-2xl font-black text-amber-500 mt-1" id="kpi-streak">0 Days</div>
+          <div class="bg-white p-3 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase">Streak</span>
+            <div class="text-lg font-black text-amber-500" id="kpi-streak">0 Days</div>
           </div>
-          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-            <span class="text-[10px] text-slate-500 font-semibold uppercase">Total Achieved</span>
-            <div class="text-lg sm:text-2xl font-black text-indigo-600 mt-1" id="kpi-total-achieved">0</div>
+          <div class="bg-white p-3 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase">Total Done</span>
+            <div class="text-lg font-black text-indigo-600" id="kpi-total-achieved">0</div>
           </div>
-          <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200">
-            <span class="text-[10px] text-slate-500 font-semibold uppercase">Focus Hours</span>
-            <div class="text-lg sm:text-2xl font-black text-violet-600 mt-1" id="kpi-focus-hours">0h</div>
+          <div class="bg-white p-3 rounded-2xl border border-slate-200">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase">Focus</span>
+            <div class="text-lg font-black text-violet-600" id="kpi-focus-hours">0h</div>
           </div>
         </div>
 
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-bold text-xs sm:text-sm text-slate-800">Weekly Achievement Breakdown (%)</h3>
-            <span class="text-[10px] text-slate-400">Passcode Synced</span>
-          </div>
-          <div class="w-full h-56 sm:h-72">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <h3 class="font-bold text-xs text-slate-800 mb-2">Weekly Completion Breakdown (%)</h3>
+          <div class="w-full h-52 sm:h-64">
             <canvas id="achievementChart"></canvas>
           </div>
         </div>
@@ -303,122 +280,125 @@
     </main>
   </div>
 
-  <!-- ================= WORKSPACE 2: OFFICE TASK MANAGER PRO ================= -->
-  <div id="workspace-office" class="w-full flex-1 flex flex-col hidden view-transition bg-slate-100/70">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 w-full flex-1 flex flex-col gap-4">
+  <!-- ================= WORKSPACE 2: OFFICE PRO WORKSPACE ================= -->
+  <div id="workspace-office" class="w-full flex-1 flex flex-col hidden bg-slate-100/70">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5 w-full flex-1 flex flex-col gap-3.5 pb-24 md:pb-8">
       
-      <!-- Office Sub-Navbar Navigation Bar -->
-      <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-2 overflow-x-auto">
-        <div class="flex items-center gap-1.5 text-xs font-bold shrink-0">
-          <button onclick="App.switchOfficeSubView('dashboard')" id="nav-office-dashboard" class="px-3 py-2 rounded-xl bg-blue-600 text-white transition flex items-center gap-1.5 shadow-xs">
+      <!-- FAST VOICE & TEXT MEETING TASK CAPTURE BAR -->
+      <div class="bg-white p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2">
+        <button id="btn-office-voice" onclick="App.startDictation('office-quick')" class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-sm sm:text-base flex-shrink-0 transition active:scale-90" title="Dictate meeting action item">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+        <input type="text" id="office-quick-input" onkeydown="if(event.key==='Enter') App.submitOfficeQuickAdd()" placeholder="Dictate or type meeting task... (e.g. Approval for Vendor budget 50000)" class="flex-1 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button onclick="App.submitOfficeQuickAdd()" class="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 flex-shrink-0 active:scale-95 shadow-xs">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span class="hidden sm:inline">Add Task</span>
+        </button>
+      </div>
+
+      <!-- Office Clean Scrollable Sub-Navbar -->
+      <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-2 overflow-x-auto">
+        <div class="flex items-center gap-1 text-xs font-bold shrink-0">
+          <button onclick="App.switchOfficeSubView('dashboard')" id="nav-office-dashboard" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white transition flex items-center gap-1.5 shadow-xs">
             <i class="fa-solid fa-chart-pie"></i> Dashboard
           </button>
-          <button onclick="App.switchOfficeSubView('tasks')" id="nav-office-tasks" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-list-check"></i> Tasks Kanban
+          <button onclick="App.switchOfficeSubView('tasks')" id="nav-office-tasks" class="px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check"></i> Tasks
           </button>
-          <button onclick="App.switchOfficeSubView('calendar')" id="nav-office-calendar" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-calendar-days"></i> Calendar & Working Days
+          <button onclick="App.switchOfficeSubView('calendar')" id="nav-office-calendar" class="px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days"></i> Calendar
           </button>
-          <button onclick="App.switchOfficeSubView('meetings')" id="nav-office-meetings" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+          <button onclick="App.switchOfficeSubView('meetings')" id="nav-office-meetings" class="px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
             <i class="fa-solid fa-users"></i> Meetings
           </button>
-          <button onclick="App.switchOfficeSubView('approvals')" id="nav-office-approvals" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+          <button onclick="App.switchOfficeSubView('approvals')" id="nav-office-approvals" class="px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
             <i class="fa-solid fa-signature"></i> Approvals
           </button>
-          <button onclick="App.switchOfficeSubView('budget')" id="nav-office-budget" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+          <button onclick="App.switchOfficeSubView('budget')" id="nav-office-budget" class="px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
             <i class="fa-solid fa-indian-rupee-sign text-emerald-600"></i> Budget (₹)
           </button>
-          <button onclick="App.switchOfficeSubView('recurring')" id="nav-office-recurring" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-repeat"></i> Recurring Templates
+          <button onclick="App.switchOfficeSubView('recurring')" id="nav-office-recurring" class="px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-repeat"></i> Recurring
           </button>
         </div>
 
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button onclick="App.openOfficeTaskModal()" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-            <i class="fa-solid fa-plus"></i> New Office Task
-          </button>
-          <button onclick="App.rolloverIncompleteOfficeTasks()" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Rollover incomplete tasks to next working day">
-            <i class="fa-solid fa-forward-step text-blue-400"></i> Rollover Incomplete
-          </button>
-        </div>
+        <button onclick="App.rolloverIncompleteOfficeTasks()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-xs" title="Rollover incomplete tasks to next working day">
+          <i class="fa-solid fa-forward-step text-blue-400"></i> <span class="hidden sm:inline">Rollover</span>
+        </button>
       </div>
 
       <!-- VIEW 1: Office Dashboard -->
-      <div id="office-view-dashboard" class="space-y-4">
-        <!-- Dashboard 4 KPIs -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+      <div id="office-view-dashboard" class="space-y-3.5">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold">
               <i class="fa-solid fa-calendar-day"></i>
             </div>
             <div>
-              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Due Today</p>
-              <p class="text-xl sm:text-2xl font-black text-slate-800" id="office-kpi-today">0</p>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Due Today</p>
+              <p class="text-lg sm:text-xl font-black text-slate-800" id="office-kpi-today">0</p>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg font-bold">
               <i class="fa-solid fa-clock-rotate-left"></i>
             </div>
             <div>
-              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Overdue</p>
-              <p class="text-xl sm:text-2xl font-black text-rose-600" id="office-kpi-overdue">0</p>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Overdue</p>
+              <p class="text-lg sm:text-xl font-black text-rose-600" id="office-kpi-overdue">0</p>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold">
               <i class="fa-solid fa-hourglass-half"></i>
             </div>
             <div>
-              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pending Approvals</p>
-              <p class="text-xl sm:text-2xl font-black text-amber-600" id="office-kpi-approvals">0</p>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Approvals</p>
+              <p class="text-lg sm:text-xl font-black text-amber-600" id="office-kpi-approvals">0</p>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
               <i class="fa-solid fa-indian-rupee-sign"></i>
             </div>
             <div>
-              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Budget</p>
-              <p class="text-xl sm:text-2xl font-black text-emerald-600" id="office-kpi-budget">₹0</p>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Budget</p>
+              <p class="text-base sm:text-lg font-black text-emerald-600 truncate" id="office-kpi-budget">₹0</p>
             </div>
           </div>
         </div>
 
-        <!-- Today's Deliverables & Upcoming List -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div class="lg:col-span-8 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <div class="flex items-center justify-between border-b pb-3">
-              <h3 class="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
-                <i class="fa-solid fa-briefcase text-blue-600"></i> Today's Office Action Items
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          <div class="lg:col-span-8 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+            <div class="flex items-center justify-between border-b pb-2">
+              <h3 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-briefcase text-blue-600"></i> Today's Office Deliverables
               </h3>
-              <span id="office-today-badge" class="text-xs font-semibold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700"></span>
+              <span id="office-today-badge" class="text-[10px] font-bold text-slate-400"></span>
             </div>
-            <div id="office-today-tasks-container" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+            <div id="office-today-tasks-container" class="space-y-2 max-h-[360px] overflow-y-auto"></div>
           </div>
 
-          <div class="lg:col-span-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <div class="flex items-center justify-between border-b pb-3">
-              <h3 class="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
-                <i class="fa-solid fa-bullhorn text-amber-500"></i> Upcoming Deadlines
+          <div class="lg:col-span-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+            <div class="flex items-center justify-between border-b pb-2">
+              <h3 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-bullhorn text-amber-500"></i> Next 7 Days
               </h3>
-              <span class="text-[10px] text-slate-400">Next 7 Days</span>
+              <span class="text-[10px] text-slate-400">Deadlines</span>
             </div>
-            <div id="office-upcoming-container" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+            <div id="office-upcoming-container" class="space-y-2 max-h-[360px] overflow-y-auto"></div>
           </div>
         </div>
       </div>
 
       <!-- VIEW 2: Kanban Tasks Board -->
-      <div id="office-view-tasks" class="hidden space-y-4">
-        <!-- Filters -->
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
-          <div class="flex-1 min-w-[140px]">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Filter by Category</label>
-            <select id="office-filter-category" onchange="App.renderOfficeKanban()" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div id="office-view-tasks" class="hidden space-y-3">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-2">
+          <div class="flex-1 min-w-[130px]">
+            <select id="office-filter-category" onchange="App.renderOfficeKanban()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 font-semibold focus:outline-none">
               <option value="">All Categories</option>
               <option value="todo">📝 ToDo</option>
               <option value="followup">🔄 Follow-up</option>
@@ -429,183 +409,157 @@
               <option value="deadline">⚠️ Deadline</option>
             </select>
           </div>
-
-          <div class="flex-1 min-w-[140px]">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Filter by Priority</label>
-            <select id="office-filter-priority" onchange="App.renderOfficeKanban()" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">All Priorities</option>
-              <option value="high">🔴 High Urgency</option>
-              <option value="medium">🟡 Medium</option>
-              <option value="low">🟢 Low</option>
-            </select>
+          <div class="flex-1 min-w-[130px]">
+            <input type="text" id="office-filter-search" oninput="App.renderOfficeKanban()" placeholder="Search title or stakeholder..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:outline-none">
           </div>
-
-          <div class="flex-1 min-w-[140px]">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Search Keywords</label>
-            <input type="text" id="office-filter-search" oninput="App.renderOfficeKanban()" placeholder="Search title or stakeholder..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
+          <button onclick="App.openOfficeTaskModal()" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl text-xs flex items-center gap-1">
+            <i class="fa-solid fa-sliders"></i> Full Form
+          </button>
         </div>
 
-        <!-- 3 Kanban Columns -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Column 1: Pending -->
-          <div class="bg-slate-200/60 p-3.5 rounded-2xl border border-slate-200 flex flex-col gap-2.5 min-h-[460px]">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="bg-slate-200/60 p-3 rounded-2xl border border-slate-200 flex flex-col gap-2 min-h-[380px]">
             <div class="flex items-center justify-between px-1">
               <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <i class="fa-solid fa-inbox text-blue-500"></i> Pending Action
+                <i class="fa-solid fa-inbox text-blue-500"></i> Pending
               </h4>
-              <span id="badge-kanban-pending" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">0</span>
+              <span id="badge-kanban-pending" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">0</span>
             </div>
-            <div id="col-kanban-pending" class="space-y-2.5 flex-1 overflow-y-auto"></div>
+            <div id="col-kanban-pending" class="space-y-2 flex-1 overflow-y-auto"></div>
           </div>
 
-          <!-- Column 2: In Progress / Waiting -->
-          <div class="bg-slate-200/60 p-3.5 rounded-2xl border border-slate-200 flex flex-col gap-2.5 min-h-[460px]">
+          <div class="bg-slate-200/60 p-3 rounded-2xl border border-slate-200 flex flex-col gap-2 min-h-[380px]">
             <div class="flex items-center justify-between px-1">
               <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <i class="fa-solid fa-user-clock text-amber-500"></i> In Progress / Delegated
+                <i class="fa-solid fa-user-clock text-amber-500"></i> In Progress
               </h4>
-              <span id="badge-kanban-waiting" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800">0</span>
+              <span id="badge-kanban-waiting" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">0</span>
             </div>
-            <div id="col-kanban-waiting" class="space-y-2.5 flex-1 overflow-y-auto"></div>
+            <div id="col-kanban-waiting" class="space-y-2 flex-1 overflow-y-auto"></div>
           </div>
 
-          <!-- Column 3: Completed -->
-          <div class="bg-slate-200/60 p-3.5 rounded-2xl border border-slate-200 flex flex-col gap-2.5 min-h-[460px]">
+          <div class="bg-slate-200/60 p-3 rounded-2xl border border-slate-200 flex flex-col gap-2 min-h-[380px]">
             <div class="flex items-center justify-between px-1">
               <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <i class="fa-solid fa-circle-check text-emerald-500"></i> Completed
               </h4>
-              <span id="badge-kanban-completed" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">0</span>
+              <span id="badge-kanban-completed" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">0</span>
             </div>
-            <div id="col-kanban-completed" class="space-y-2.5 flex-1 overflow-y-auto"></div>
+            <div id="col-kanban-completed" class="space-y-2 flex-1 overflow-y-auto"></div>
           </div>
         </div>
       </div>
 
-      <!-- VIEW 3: Office Interactive Calendar & Holidays -->
-      <div id="office-view-calendar" class="hidden space-y-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <div class="flex items-center justify-between mb-4">
+      <!-- VIEW 3: Calendar & Working Days -->
+      <div id="office-view-calendar" class="hidden space-y-3.5">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between mb-3">
             <div>
-              <h3 id="office-cal-month-title" class="font-black text-lg text-slate-800">Month Year</h3>
-              <p class="text-xs text-slate-500">Total Working Days: <span id="office-working-days-tally" class="font-bold text-blue-600">0</span></p>
+              <h3 id="office-cal-month-title" class="font-bold text-base text-slate-800">Month</h3>
+              <p class="text-[11px] text-slate-500">Working Days: <span id="office-working-days-tally" class="font-bold text-blue-600">0</span></p>
             </div>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1">
               <button onclick="App.prevOfficeMonth()" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-              <button onclick="App.resetOfficeMonthToToday()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold hover:bg-slate-100 transition">Current Month</button>
+              <button onclick="App.resetOfficeMonthToToday()" class="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold hover:bg-slate-100 transition">Today</button>
               <button onclick="App.nextOfficeMonth()" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
             </div>
           </div>
 
-          <div class="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2 text-center text-xs font-bold text-slate-500">
-            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          <div class="grid grid-cols-7 gap-1 mb-1 text-center text-xs font-bold text-slate-400">
+            <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
           </div>
-          <div id="office-calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+          <div id="office-calendar-grid" class="grid grid-cols-7 gap-1"></div>
         </div>
 
-        <!-- Working Day & Holiday Rule Setup -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-business-time text-blue-600"></i> Working Days & Holiday Configuration
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-business-time text-blue-600"></i> Working Days & Holidays Configuration
           </h4>
-          <p class="text-xs text-slate-500 leading-relaxed">Select standard working days. Rollover tasks and automated schedules will skip off-days and declared holidays automatically.</p>
-          
-          <div class="flex flex-wrap gap-2" id="office-working-days-checkboxes"></div>
+          <div class="flex flex-wrap gap-1.5" id="office-working-days-checkboxes"></div>
 
-          <div class="pt-3 border-t border-slate-100 flex flex-wrap gap-2 items-center">
-            <input type="date" id="input-add-holiday-date" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
-            <input type="text" id="input-add-holiday-title" placeholder="Holiday description (e.g. Diwali)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50 flex-1 min-w-[150px]">
-            <button onclick="App.addOfficeHoliday()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">Add Holiday</button>
+          <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
+            <input type="date" id="input-add-holiday-date" class="px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50">
+            <input type="text" id="input-add-holiday-title" placeholder="Holiday reason..." class="px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 flex-1 min-w-[140px]">
+            <button onclick="App.addOfficeHoliday()" class="px-3.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl transition">Add</button>
           </div>
-
           <div id="office-holidays-tags" class="flex flex-wrap gap-1.5 pt-1"></div>
         </div>
       </div>
 
       <!-- VIEW 4: Meetings -->
-      <div id="office-view-meetings" class="hidden space-y-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <h3 class="font-bold text-base text-slate-800 mb-4 flex items-center gap-2">
-            <i class="fa-solid fa-handshake text-blue-600"></i> Scheduled Meetings & Reviews
+      <div id="office-view-meetings" class="hidden space-y-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <h3 class="font-bold text-sm text-slate-800 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-blue-600"></i> Scheduled Meetings
           </h3>
-          <div id="office-meetings-list" class="space-y-3"></div>
+          <div id="office-meetings-list" class="space-y-2"></div>
         </div>
       </div>
 
-      <!-- VIEW 5: Approvals Workflow -->
-      <div id="office-view-approvals" class="hidden space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <h3 class="font-bold text-sm text-rose-600 uppercase tracking-wider flex items-center gap-2">
+      <!-- VIEW 5: Approvals -->
+      <div id="office-view-approvals" class="hidden space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+            <h3 class="font-bold text-xs text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
               <i class="fa-solid fa-stamp"></i> Pending Your Approval
             </h3>
-            <div id="office-approvals-mine" class="space-y-2.5"></div>
+            <div id="office-approvals-mine" class="space-y-2"></div>
           </div>
-
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <h3 class="font-bold text-sm text-blue-600 uppercase tracking-wider flex items-center gap-2">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+            <h3 class="font-bold text-xs text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
               <i class="fa-solid fa-hourglass-end"></i> Awaiting Others' Sign-Off
             </h3>
-            <div id="office-approvals-others" class="space-y-2.5"></div>
+            <div id="office-approvals-others" class="space-y-2"></div>
           </div>
         </div>
       </div>
 
       <!-- VIEW 6: Budget (₹) -->
-      <div id="office-view-budget" class="hidden space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div class="md:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col items-center">
-            <h3 class="font-bold text-sm text-slate-800 mb-3 text-left w-full flex items-center gap-1.5">
-              <i class="fa-solid fa-chart-pie text-emerald-600"></i> Financial Sanction Breakdown (₹)
+      <div id="office-view-budget" class="hidden space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="md:col-span-5 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col items-center">
+            <h3 class="font-bold text-xs text-slate-800 mb-2 text-left w-full flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-pie text-emerald-600"></i> Financial Sanctions (₹)
             </h3>
-            <div class="w-full max-w-[280px] h-[260px] flex items-center justify-center">
+            <div class="w-full max-w-[240px] h-[220px] flex items-center justify-center">
               <canvas id="officeBudgetChart"></canvas>
             </div>
-            <p id="office-budget-total-text" class="text-sm font-extrabold text-slate-800 mt-2">Total Budget: ₹0</p>
+            <p id="office-budget-total-text" class="text-xs font-black text-slate-800 mt-2">Total Budget: ₹0</p>
           </div>
-
-          <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+          <div class="md:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+            <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
               <i class="fa-solid fa-indian-rupee-sign text-emerald-600"></i> Sanctioned Task Budgets
             </h3>
-            <div id="office-budget-tasks-list" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+            <div id="office-budget-tasks-list" class="space-y-2 max-h-[340px] overflow-y-auto"></div>
           </div>
         </div>
       </div>
 
       <!-- VIEW 7: Recurring Templates -->
-      <div id="office-view-recurring" class="hidden space-y-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-repeat text-blue-600"></i> Master Recurring Office Workflows
+      <div id="office-view-recurring" class="hidden space-y-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-repeat text-blue-600"></i> Recurring Templates
           </h3>
-          <p class="text-xs text-slate-500">Define recurring reporting, monthly compliance, or weekly reviews. Populate the current month with one tap.</p>
-          
-          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex flex-wrap gap-2 items-center">
-            <input type="text" id="tpl-office-title" placeholder="Template title (e.g. Month-End Financial Audit)" class="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white">
-            <select id="tpl-office-category" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
-              <option value="todo">ToDo</option>
-              <option value="meeting">Meeting</option>
-              <option value="approval">Approval</option>
-              <option value="budget">Budget</option>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap gap-2 items-center">
+            <input type="text" id="tpl-office-title" placeholder="Template title..." class="flex-1 min-w-[180px] px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white">
+            <select id="tpl-office-category" class="px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
+              <option value="todo">ToDo</option><option value="meeting">Meeting</option><option value="approval">Approval</option><option value="budget">Budget</option>
             </select>
-            <select id="tpl-office-rule" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
-              <option value="Daily">Every Working Day</option>
-              <option value="Weekly_1">Weekly (Monday)</option>
-              <option value="Weekly_5">Weekly (Friday)</option>
+            <select id="tpl-office-rule" class="px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
+              <option value="Daily">Daily (Workdays)</option>
+              <option value="Weekly_1">Weekly (Mon)</option>
+              <option value="Weekly_5">Weekly (Fri)</option>
               <option value="Monthly_1">Monthly (1st)</option>
               <option value="Monthly_15">Monthly (15th)</option>
               <option value="Monthly_30">Monthly (Month-End)</option>
             </select>
-            <button onclick="App.addOfficeRecurringTemplate()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">Save Template</button>
+            <button onclick="App.addOfficeRecurringTemplate()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition">Save</button>
           </div>
-
-          <div id="office-templates-list" class="space-y-2"></div>
-
-          <div class="pt-3 border-t border-slate-100 flex justify-end">
-            <button onclick="App.populateMonthFromTemplates()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Populate Tasks For Active Month
+          <div id="office-templates-list" class="space-y-1.5"></div>
+          <div class="pt-2 border-t border-slate-100 flex justify-end">
+            <button onclick="App.populateMonthFromTemplates()" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold transition flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Populate Tasks For Month
             </button>
           </div>
         </div>
@@ -616,94 +570,88 @@
 
   <!-- ================= MODALS ================= -->
 
-  <!-- MODAL 1: Personal Task Modal -->
+  <!-- MODAL 1: Personal Task Full Form -->
   <div id="modal-personal-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
-      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 id="personal-task-modal-title" class="font-bold text-slate-800 text-sm sm:text-base">Schedule Time Slot</h3>
-        <button onclick="App.closePersonalTaskModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95"><i class="fa-solid fa-xmark"></i></button>
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="personal-task-modal-title" class="font-bold text-slate-800 text-sm">Schedule Time Slot</h3>
+        <button onclick="App.closePersonalTaskModal()" class="p-1.5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="form-personal-task" onsubmit="App.savePersonalTask(event)" class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
+      <form id="form-personal-task" onsubmit="App.savePersonalTask(event)" class="p-5 space-y-3 max-h-[82vh] overflow-y-auto">
         <input type="hidden" id="personal-task-id">
         <div>
-          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Title</label>
-          <input type="text" id="personal-input-title" required placeholder="e.g. Deep Work: Review System Specs" class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Task Title</label>
+          <input type="text" id="personal-input-title" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Calendar Date</label>
-          <input type="date" id="personal-input-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-bold">
+          <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Date</label>
+          <input type="date" id="personal-input-date" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50">
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Start Time</label>
-            <input type="time" id="personal-input-start" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Start Time</label>
+            <input type="time" id="personal-input-start" required class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">End Time</label>
-            <input type="time" id="personal-input-end" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">End Time</label>
+            <input type="time" id="personal-input-end" required class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Priority</label>
-            <select id="personal-input-priority" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
-              <option value="High">🔴 High</option>
-              <option value="Medium" selected>🟡 Medium</option>
-              <option value="Low">🟢 Low</option>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Priority</label>
+            <select id="personal-input-priority" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
+              <option value="High">🔴 High</option><option value="Medium" selected>🟡 Medium</option><option value="Low">🟢 Low</option>
             </select>
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
-            <select id="personal-input-category" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
-              <option value="Deep Work">💼 Deep Work</option>
-              <option value="Meeting">📞 Meeting</option>
-              <option value="Health">🏃 Health</option>
-              <option value="Personal">🌱 Personal</option>
-              <option value="Planning">📝 Planning</option>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select id="personal-input-category" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
+              <option value="Deep Work">💼 Deep Work</option><option value="Meeting">📞 Meeting</option><option value="Health">🏃 Health</option><option value="Personal">🌱 Personal</option><option value="Planning">📝 Planning</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Notes / Checklist</label>
-          <input type="text" id="personal-input-notes" placeholder="Optional notes" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Notes</label>
+          <input type="text" id="personal-input-notes" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="App.closePersonalTaskModal()" class="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition active:scale-95">Cancel</button>
-          <button type="submit" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition active:scale-95">Save & Sync</button>
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="App.closePersonalTaskModal()" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs">Save</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL 2: Office Task Modal (With Comments/Update Log, ₹ Budget, Stakeholders) -->
+  <!-- MODAL 2: Office Task Full Form -->
   <div id="modal-office-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all pb-safe flex flex-col max-h-[92vh]">
-      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-        <h3 id="office-task-modal-title" class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+        <h3 id="office-task-modal-title" class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
           <i class="fa-solid fa-briefcase text-blue-600"></i> Office Task
         </h3>
-        <button onclick="App.closeOfficeTaskModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="App.closeOfficeTaskModal()" class="p-1.5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="overflow-y-auto p-5 sm:p-6 flex-1 space-y-4">
-        <form id="form-office-task" onsubmit="App.saveOfficeTask(event)" class="space-y-3.5">
+      <div class="overflow-y-auto p-5 flex-1 space-y-3.5">
+        <form id="form-office-task" onsubmit="App.saveOfficeTask(event)" class="space-y-3">
           <input type="hidden" id="office-task-id">
           
           <div>
-            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Task Deliverable Title</label>
-            <input type="text" id="office-input-title" required placeholder="e.g. Q3 Strategic Allocation Document" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Task Deliverable Title</label>
+            <input type="text" id="office-input-title" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-blue-500">
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
-              <select id="office-input-category" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Category</label>
+              <select id="office-input-category" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50">
                 <option value="todo">📝 ToDo</option>
                 <option value="followup">🔄 Follow-up</option>
                 <option value="initiate">🚀 Initiate</option>
@@ -714,64 +662,62 @@
               </select>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Workflow Status</label>
-              <select id="office-input-status" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Status</label>
+              <select id="office-input-status" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50">
                 <option value="pending">📥 Pending</option>
-                <option value="waiting">⏳ In Progress / Delegated</option>
+                <option value="waiting">⏳ In Progress / Waiting</option>
                 <option value="completed">✅ Completed</option>
               </select>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Priority</label>
-              <select id="office-input-priority" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
-                <option value="high">🔴 High Urgency</option>
-                <option value="medium" selected>🟡 Medium</option>
-                <option value="low">🟢 Low</option>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Priority</label>
+              <select id="office-input-priority" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50">
+                <option value="high">🔴 High Urgency</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option>
               </select>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Target / Due Date</label>
-              <input type="date" id="office-input-duedate" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500">
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Due Date</label>
+              <input type="date" id="office-input-duedate" required class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50">
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <div class="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
             <div>
-              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Stakeholder / Delegated To</label>
-              <input type="text" id="office-input-assignee" placeholder="e.g. Boss, Sarah, IT" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Stakeholder</label>
+              <input type="text" id="office-input-assignee" placeholder="e.g. Boss, CFO" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Budget Allocation (₹)</label>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Budget (₹)</label>
               <div class="relative">
-                <span class="absolute left-3 top-2 text-xs font-bold text-slate-500">₹</span>
-                <input type="number" id="office-input-budget" placeholder="0" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-300 text-xs bg-white font-bold text-emerald-700">
+                <span class="absolute left-2.5 top-1.5 text-xs font-bold text-slate-500">₹</span>
+                <input type="number" id="office-input-budget" placeholder="0" class="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-bold text-emerald-700">
               </div>
             </div>
           </div>
 
           <div>
-            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Notes</label>
-            <textarea id="office-input-description" rows="2" placeholder="Deliverable requirements or agenda..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"></textarea>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Description</label>
+            <textarea id="office-input-description" rows="2" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs"></textarea>
           </div>
 
           <!-- Chronological Comments / Update Log -->
-          <div id="office-updates-container" class="pt-3 border-t border-slate-100 hidden space-y-2">
+          <div id="office-updates-container" class="pt-2 border-t border-slate-100 hidden space-y-2">
             <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <i class="fa-regular fa-comments text-blue-600"></i> Progress Log & Comments
+              <i class="fa-regular fa-comments text-blue-600"></i> Updates & Comments
             </h4>
-            <div id="office-updates-list" class="space-y-2 max-h-36 overflow-y-auto pr-1"></div>
-            <div class="flex gap-2">
-              <input type="text" id="office-new-comment-input" placeholder="Add chronological status update..." class="flex-1 px-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-slate-50">
-              <button type="button" onclick="App.addOfficeTaskComment()" class="px-3 py-1.5 bg-blue-100 text-blue-800 hover:bg-blue-200 font-bold rounded-xl text-xs transition">Add Update</button>
+            <div id="office-updates-list" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></div>
+            <div class="flex gap-1.5">
+              <input type="text" id="office-new-comment-input" placeholder="Add status comment..." class="flex-1 px-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-slate-50">
+              <button type="button" onclick="App.addOfficeTaskComment()" class="px-3 py-1.5 bg-blue-100 text-blue-800 font-bold rounded-xl text-xs">Add</button>
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button type="button" onclick="App.closeOfficeTaskModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">Cancel</button>
-            <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 transition">Save Office Task</button>
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="App.closeOfficeTaskModal()" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs">Save Task</button>
           </div>
         </form>
       </div>
@@ -781,43 +727,38 @@
   <!-- MODAL 3: End of Day Review -->
   <div id="modal-review" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
-      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 sm:p-6 text-white">
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-white">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-award text-lg"></i>
-            <h3 class="font-bold text-base sm:text-lg">Daily Performance Review</h3>
-          </div>
-          <button onclick="App.closeEndDayReview()" class="text-white/80 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
+          <h3 class="font-bold text-sm">Daily Evening Review</h3>
+          <button onclick="App.closeEndDayReview()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <p class="text-xs text-white/90 mt-1" id="review-date-label">Reflect on accomplishments & prepare tomorrow.</p>
+        <p class="text-[11px] text-white/90 mt-0.5" id="review-date-label"></p>
       </div>
 
-      <div class="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      <div class="p-4 space-y-3">
         <div class="grid grid-cols-3 gap-2 text-center">
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-            <span class="text-[10px] text-slate-500 font-bold block">Achieved</span>
-            <span id="review-achieved-val" class="text-lg font-black text-emerald-600">0</span>
+          <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-bold block">Done</span>
+            <span id="review-achieved-val" class="text-base font-black text-emerald-600">0</span>
           </div>
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+          <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
             <span class="text-[10px] text-slate-500 font-bold block">Missed</span>
-            <span id="review-missed-val" class="text-lg font-black text-rose-500">0</span>
+            <span id="review-missed-val" class="text-base font-black text-rose-500">0</span>
           </div>
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-            <span class="text-[10px] text-slate-500 font-bold block">Daily Score</span>
-            <span id="review-score-val" class="text-lg font-black text-indigo-600">0%</span>
+          <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-bold block">Score</span>
+            <span id="review-score-val" class="text-base font-black text-indigo-600">0%</span>
           </div>
         </div>
 
-        <div class="space-y-2">
-          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700">
-            <input type="checkbox" id="check-carryover" checked class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
-            <span>Automatically roll over unfinished slots to tomorrow</span>
-          </label>
-        </div>
+        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+          <input type="checkbox" id="check-carryover" checked class="w-4 h-4 rounded text-indigo-600">
+          <span>Roll over unfinished slots to tomorrow</span>
+        </label>
 
-        <div class="flex items-center justify-end gap-2 pt-2">
-          <button onclick="App.closeEndDayReview()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">Cancel</button>
-          <button onclick="App.finalizeEndDayReview()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition">Finalize Day</button>
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button onclick="App.closeEndDayReview()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold">Cancel</button>
+          <button onclick="App.finalizeEndDayReview()" class="px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">Finalize</button>
         </div>
       </div>
     </div>
@@ -826,88 +767,79 @@
   <!-- MODAL 4: Recurring Habits Manager (Personal) -->
   <div id="modal-recurring-habits" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all pb-safe">
-      <div class="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
-          <i class="fa-solid fa-repeat text-indigo-600"></i> Master Repeating Habits
-        </h3>
-        <button onclick="App.closeHabitsModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5"><i class="fa-solid fa-repeat text-indigo-600"></i> Habits Bank</h3>
+        <button onclick="App.closeHabitsModal()" class="p-1.5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="p-5 sm:p-6 space-y-3.5 max-h-[80vh] overflow-y-auto">
-        <div class="flex flex-wrap gap-2">
-          <input type="text" id="input-new-habit-title" placeholder="New habit (e.g. Reading)" class="flex-1 min-w-[120px] px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <input type="time" id="input-new-habit-time" value="08:00" class="w-20 px-2 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50" title="Start Time">
-          <input type="time" id="input-new-habit-end-time" value="09:00" class="w-20 px-2 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50" title="End Time">
-          <button onclick="App.addHabitToBank()" class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition">Add</button>
+      <div class="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+        <div class="flex flex-wrap gap-1.5">
+          <input type="text" id="input-new-habit-title" placeholder="Habit title..." class="flex-1 min-w-[120px] px-3 py-1.5 text-xs rounded-xl border border-slate-300">
+          <input type="time" id="input-new-habit-time" value="08:00" class="w-20 px-2 py-1.5 text-xs rounded-xl border border-slate-300 bg-slate-50">
+          <input type="time" id="input-new-habit-end-time" value="09:00" class="w-20 px-2 py-1.5 text-xs rounded-xl border border-slate-300 bg-slate-50">
+          <button onclick="App.addHabitToBank()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Add</button>
         </div>
 
-        <div class="text-xs font-bold text-slate-700 uppercase tracking-wider mt-2">Habits Bank</div>
-        <div id="master-habits-list" class="max-h-56 overflow-y-auto space-y-2 pr-1"></div>
+        <div id="master-habits-list" class="max-h-52 overflow-y-auto space-y-1.5"></div>
 
-        <div class="pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
-          <button onclick="App.applyDefaultRecurringHabits()" class="flex-1 px-3.5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition">
-            Apply All to Today
-          </button>
-          <button onclick="App.closeHabitsModal()" class="px-4 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition">Done</button>
+        <div class="pt-2 border-t border-slate-100 flex justify-between items-center gap-2">
+          <button onclick="App.applyDefaultRecurringHabits()" class="flex-1 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl">Apply All to Today</button>
+          <button onclick="App.closeHabitsModal()" class="px-3.5 py-2 border border-slate-200 text-xs font-bold rounded-xl">Done</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 5: Sync Key & Passcode Setup Modal -->
+  <!-- MODAL 5: Sync Key & Passcode Modal -->
   <div id="modal-passcode" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-slate-100 overflow-hidden transform transition-all p-5 sm:p-6 pb-safe">
+    <div class="bottom-sheet-drawer bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-slate-100 overflow-hidden transform transition-all p-5 pb-safe">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
-          <i class="fa-solid fa-key text-indigo-600"></i> Settings & Sync Key
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-key text-indigo-600"></i> Sync Settings
         </h3>
-        <button onclick="App.closePasscodeModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="App.closePasscodeModal()" class="p-1 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="py-4 space-y-3.5">
+      <div class="py-3.5 space-y-3">
         <p class="text-[11px] text-slate-500 leading-relaxed">
-          Type <strong>OFFICE</strong> to instantly activate the Office Task Suite. Any exact passcode links all your mobile and PC schedules together in real time.
+          Type <strong>OFFICE</strong> to unlock Office Pro. Using the same passcode links all your devices in real-time.
         </p>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Your Passcode</label>
-          <div class="flex gap-2">
-            <input type="text" id="input-custom-passcode" placeholder="e.g. OFFICE or ALUVA-2026" class="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 font-mono font-bold tracking-wider text-sm uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            <button onclick="App.setPasscodeQuick('OFFICE')" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold rounded-xl transition">
-              OFFICE
-            </button>
+          <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Passcode</label>
+          <div class="flex gap-1.5">
+            <input type="text" id="input-custom-passcode" placeholder="e.g. OFFICE or ALUVA-2026" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold text-xs uppercase focus:ring-2 focus:ring-indigo-500">
+            <button onclick="App.setPasscodeQuick('OFFICE')" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold rounded-xl transition">OFFICE</button>
           </div>
         </div>
 
-        <div class="pt-2 flex flex-col gap-2">
-          <button onclick="App.applyPasscodeFromInput()" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition shadow-md shadow-indigo-100 active:scale-95">
-            <i class="fa-solid fa-plug text-xs"></i> Connect Passcode
+        <button onclick="App.applyPasscodeFromInput()" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs">
+          Connect Passcode
+        </button>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="App.forcePushCloud()" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-upload text-indigo-600"></i> Push Cloud
           </button>
-          
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <button onclick="App.forcePushCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-upload text-indigo-600"></i> Push to Cloud
-            </button>
-            <button onclick="App.forcePullCloud()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-download text-emerald-600"></i> Pull from Cloud
-            </button>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="App.exportFullBackupJSON()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-file-export text-blue-600"></i> Export JSON
-            </button>
-            <button onclick="document.getElementById('input-backup-file').click()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-file-import text-amber-600"></i> Restore JSON
-            </button>
-          </div>
+          <button onclick="App.forcePullCloud()" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-download text-emerald-600"></i> Pull Cloud
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="App.exportFullBackupJSON()" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-file-export text-blue-600"></i> Export JSON
+          </button>
+          <button onclick="document.getElementById('input-backup-file').click()" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-file-import text-amber-600"></i> Restore JSON
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Notification Toast -->
-  <div id="toast" class="fixed top-4 sm:top-auto sm:bottom-5 right-4 sm:right-5 z-50 transform -translate-y-20 sm:translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800">
+  <div id="toast" class="fixed top-4 sm:top-auto sm:bottom-5 right-4 sm:right-5 z-50 transform -translate-y-20 sm:translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800">
     <i class="fa-solid fa-circle-check text-emerald-400"></i>
     <span id="toast-message">Action synchronized!</span>
   </div>
@@ -915,11 +847,10 @@
   <!-- Hidden File Input for Backup Import -->
   <input type="file" id="input-backup-file" accept=".json" class="hidden" onchange="App.importFullBackupJSON(event)" />
 
-  <!-- ================= UNIFIED JAVASCRIPT APPLICATION LOGIC ================= -->
+  <!-- ================= UNIFIED APPLICATION LOGIC WITH VOICE ================= -->
   <script>
     let deferredInstallPrompt = null;
 
-    // PWA Manifest generator
     (function setupPwaManifest() {
       try {
         function createIconDataUrl(size) {
@@ -928,7 +859,7 @@
           canvas.height = size;
           const ctx = canvas.getContext('2d');
           const grad = ctx.createLinearGradient(0, 0, size, size);
-          grad.addColorStop(0, '#1e293b');
+          grad.addColorStop(0, '#0f172a');
           grad.addColorStop(1, '#4f46e5');
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -957,7 +888,7 @@
           start_url: window.location.href.split('#')[0],
           display: "standalone",
           background_color: "#f8fafc",
-          theme_color: "#1e293b",
+          theme_color: "#0f172a",
           icons: [{ src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" }]
         };
 
@@ -987,6 +918,11 @@
       let budgetChartInstance = null;
       let personalChartInstance = null;
 
+      // Voice recognition state
+      let speechRecognizer = null;
+      let isListening = false;
+      let activeVoiceTarget = null;
+
       let currentPasscode = (localStorage.getItem('DAYTRACK_PASSCODE') || 'MY-PLANNER')
         .trim()
         .toUpperCase()
@@ -1000,9 +936,8 @@
         { id: 'h5', title: 'Daily Review & Next Day Plan', start: '20:30', end: '21:00', priority: 'High', category: 'Planning' },
       ];
 
-      // Unified Application State
       let state = {
-        mode: 'personal', // 'personal' | 'office'
+        mode: 'personal',
         personal: {
           tasksByDate: {},
           habits: [...defaultHabits],
@@ -1010,8 +945,8 @@
         },
         office: {
           tasks: [],
-          workingDays: [1, 2, 3, 4, 5], // Mon to Fri
-          holidays: [], // array of { date: 'YYYY-MM-DD', title: '...' }
+          workingDays: [1, 2, 3, 4, 5],
+          holidays: [],
           recurring: []
         }
       };
@@ -1038,9 +973,7 @@
         if (!toast || !toastMsg) return;
         toastMsg.innerText = msg;
         toast.classList.remove('-translate-y-20', 'sm:translate-y-20', 'opacity-0');
-        setTimeout(() => {
-          toast.classList.add('-translate-y-20', 'sm:translate-y-20', 'opacity-0');
-        }, 2500);
+        setTimeout(() => toast.classList.add('-translate-y-20', 'sm:translate-y-20', 'opacity-0'), 2500);
       }
 
       function updateSyncStatus(status) {
@@ -1050,7 +983,6 @@
         if (!statusEl || !pulseDot || !badgeText) return;
 
         badgeText.innerText = `SYNC: ${currentPasscode}`;
-
         if (status === 'syncing') {
           statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60 transition';
           pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
@@ -1058,7 +990,7 @@
           statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 transition hover:bg-emerald-900/90 shadow-2xs';
           pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse';
         } else {
-          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/60 transition hover:bg-rose-900';
+          statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/60 transition';
           pulseDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
         }
       }
@@ -1072,15 +1004,184 @@
             if (parsed.office) state.office = parsed.office;
             if (parsed.mode) state.mode = parsed.mode;
           }
-        } catch (e) {
-          console.warn('Local storage parse error', e);
-        }
+        } catch (e) {}
       }
 
       function saveLocal() {
         try {
           localStorage.setItem(`daytrack_unified_${currentPasscode}`, JSON.stringify(state));
         } catch (e) {}
+      }
+
+      // ================= SPEECH TO TEXT DICTATION =================
+      function initVoiceDictation() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) return;
+
+        speechRecognizer = new SpeechRec();
+        speechRecognizer.continuous = false;
+        speechRecognizer.interimResults = false;
+        speechRecognizer.lang = 'en-IN';
+
+        speechRecognizer.onstart = () => {
+          isListening = true;
+          const btn = activeVoiceTarget === 'office-quick' 
+            ? document.getElementById('btn-office-voice')
+            : document.getElementById('btn-personal-voice');
+          if (btn) {
+            btn.classList.add('mic-recording', 'bg-rose-500', 'text-white');
+            btn.classList.remove('bg-indigo-50', 'bg-blue-50', 'text-indigo-600', 'text-blue-600');
+          }
+          showToast('Listening... Speak your task now 🎙️');
+        };
+
+        speechRecognizer.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (!transcript) return;
+
+          if (activeVoiceTarget === 'office-quick') {
+            document.getElementById('office-quick-input').value = transcript;
+            submitOfficeQuickAdd();
+          } else {
+            document.getElementById('personal-quick-input').value = transcript;
+            submitPersonalQuickAdd();
+          }
+        };
+
+        speechRecognizer.onerror = (event) => {
+          console.warn('Speech recognition notice:', event.error);
+          resetVoiceButtons();
+        };
+
+        speechRecognizer.onend = () => {
+          isListening = false;
+          resetVoiceButtons();
+        };
+      }
+
+      function resetVoiceButtons() {
+        const btnP = document.getElementById('btn-personal-voice');
+        const btnO = document.getElementById('btn-office-voice');
+        if (btnP) {
+          btnP.classList.remove('mic-recording', 'bg-rose-500', 'text-white');
+          btnP.classList.add('bg-indigo-50', 'text-indigo-600');
+        }
+        if (btnO) {
+          btnO.classList.remove('mic-recording', 'bg-rose-500', 'text-white');
+          btnO.classList.add('bg-blue-50', 'text-blue-600');
+        }
+      }
+
+      function startDictation(target) {
+        if (!speechRecognizer) {
+          showToast('Voice dictation not supported on this browser. Type below.');
+          return;
+        }
+        if (isListening) {
+          speechRecognizer.stop();
+          return;
+        }
+        activeVoiceTarget = target;
+        try {
+          speechRecognizer.start();
+        } catch(e) {
+          speechRecognizer.stop();
+        }
+      }
+
+      // ================= SMART QUICK-ADD HANDLERS =================
+      function submitPersonalQuickAdd() {
+        const input = document.getElementById('personal-quick-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Parse time if present like "10:00 Task" or "10am Task"
+        let start = '09:00';
+        let end = '10:00';
+        let cleanTitle = text;
+
+        const timeMatch = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+        if (timeMatch) {
+          start = timeMatch[0];
+          const [h, m] = start.split(':').map(Number);
+          end = `${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          cleanTitle = text.replace(timeMatch[0], '').trim();
+        }
+
+        if (!state.personal.tasksByDate[currentDate]) state.personal.tasksByDate[currentDate] = [];
+        state.personal.tasksByDate[currentDate].push({
+          id: 'pt_' + Date.now(),
+          title: cleanTitle || text,
+          start,
+          end,
+          priority: 'Medium',
+          category: 'Deep Work',
+          notes: 'Quick captured',
+          completed: false
+        });
+
+        input.value = '';
+        renderPersonalDayTasks();
+        broadcastFullState();
+        showToast('Task added to schedule! ✨');
+      }
+
+      function submitOfficeQuickAdd() {
+        const input = document.getElementById('office-quick-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const lower = text.toLowerCase();
+        let category = 'todo';
+        let priority = 'medium';
+        let budget = null;
+        let dueDate = getFormattedDate(new Date());
+
+        // Smart Tagging based on meeting dictation keywords
+        if (lower.includes('meeting') || lower.includes('discuss') || lower.includes('sync') || lower.includes('call')) {
+          category = 'meeting';
+        } else if (lower.includes('approval') || lower.includes('approve') || lower.includes('sign off')) {
+          category = 'approval';
+        } else if (lower.includes('urgent') || lower.includes('asap') || lower.includes('deadline')) {
+          category = 'deadline';
+          priority = 'high';
+        } else if (lower.includes('follow up') || lower.includes('followup') || lower.includes('check with')) {
+          category = 'followup';
+        } else if (lower.includes('initiate') || lower.includes('kickoff') || lower.includes('start')) {
+          category = 'initiate';
+        }
+
+        // Extract numbers following budget/₹/rs/rupees
+        const budgetMatch = text.match(/(?:budget|rs|rupees|inr|₹)\s*[:=]?\s*(\d+[\d,]*)/i);
+        if (budgetMatch) {
+          category = 'budget';
+          budget = Number(budgetMatch[1].replace(/,/g, ''));
+        }
+
+        // Relative dates
+        if (lower.includes('tomorrow')) {
+          const d = new Date(); d.setDate(d.getDate() + 1);
+          dueDate = getFormattedDate(d);
+        }
+
+        state.office.tasks.push({
+          id: 'ot_' + Date.now(),
+          title: text,
+          category,
+          status: 'pending',
+          priority,
+          dueDate,
+          assignee: '',
+          budget,
+          description: 'Quick captured during meeting',
+          updates: []
+        });
+
+        input.value = '';
+        broadcastFullState();
+        renderOfficeDashboard();
+        renderOfficeKanban();
+        showToast(`Captured as ${category.toUpperCase()}! 🚀`);
       }
 
       // ================= CLOUD SYNC ENGINE =================
@@ -1101,9 +1202,7 @@
             updateSyncStatus('synced');
             return true;
           }
-        } catch (err) {
-          console.warn('Cloud transmit warning:', err);
-        }
+        } catch (err) {}
         updateSyncStatus('synced');
         return false;
       }
@@ -1170,7 +1269,7 @@
             } catch (e) {}
           }
           if (processed > 0 && !silent) {
-            showToast('All calendar and office tasks synced! ✨');
+            showToast('All devices synchronized! ✨');
           }
           updateSyncStatus('synced');
         } catch (err) {
@@ -1218,7 +1317,6 @@
         const oWork = document.getElementById('workspace-office');
         const btnP = document.getElementById('mode-btn-personal');
         const btnO = document.getElementById('mode-btn-office');
-        const headerAddLabel = document.getElementById('btn-header-add-label');
         const appTitleSuffix = document.getElementById('app-title-suffix');
         const appLogoBadge = document.getElementById('app-logo-badge');
         const appLogoIcon = document.getElementById('app-logo-icon');
@@ -1228,7 +1326,6 @@
           oWork.classList.remove('hidden');
           btnO.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-blue-600 text-white shadow-xs transition flex items-center gap-1.5';
           btnP.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5';
-          headerAddLabel.innerText = 'New Task';
           appTitleSuffix.innerText = 'Office';
           appTitleSuffix.className = 'text-blue-400 font-extrabold';
           appLogoBadge.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md flex-shrink-0 cursor-pointer';
@@ -1239,20 +1336,11 @@
           pWork.classList.remove('hidden');
           btnP.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-indigo-600 text-white shadow-xs transition flex items-center gap-1.5';
           btnO.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5';
-          headerAddLabel.innerText = 'Add Slot';
           appTitleSuffix.innerText = 'Pro';
           appTitleSuffix.className = 'text-indigo-400 font-extrabold';
           appLogoBadge.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md flex-shrink-0 cursor-pointer';
           appLogoIcon.className = 'fa-solid fa-list-check text-sm sm:text-base';
           renderPersonalDayTasks();
-        }
-      }
-
-      function handleHeaderAddAction() {
-        if (state.mode === 'office') {
-          openOfficeTaskModal();
-        } else {
-          openPersonalTaskModal();
         }
       }
 
@@ -1275,14 +1363,14 @@
         if (tab === 'analytics') {
           vSched.classList.add('hidden');
           vAnaly.classList.remove('hidden');
-          tAnaly.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
-          tSched.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
+          tAnaly.className = 'pb-2.5 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-1.5 transition';
+          tSched.className = 'pb-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition';
           renderPersonalAnalytics();
         } else {
           vAnaly.classList.add('hidden');
           vSched.classList.remove('hidden');
-          tSched.className = 'pb-3 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 transition';
-          tAnaly.className = 'pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition';
+          tSched.className = 'pb-2.5 text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-1.5 transition';
+          tAnaly.className = 'pb-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition';
         }
       }
 
@@ -1306,15 +1394,15 @@
         currentDate = getFormattedDate(d);
         document.getElementById('personal-date-picker').value = currentDate;
         renderPersonalDayTasks();
-        showToast('Viewing tomorrow! Plan your focus blocks.');
+        showToast('Viewing tomorrow! Add your blocks.');
       }
 
       function filterPersonalTasks(filter) {
         personalFilter = filter;
         document.querySelectorAll('.filter-btn').forEach(btn => {
           btn.className = (btn.dataset.filter === filter) 
-            ? 'filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition'
-            : 'filter-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition';
+            ? 'filter-btn px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold transition'
+            : 'filter-btn px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition';
         });
         renderPersonalDayTasks();
       }
@@ -1343,29 +1431,28 @@
 
         filtered.forEach(task => {
           const card = document.createElement('div');
-          card.className = `p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 task-card-hover ${task.completed ? 'bg-slate-50/70 border-slate-200' : ''}`;
+          card.className = `p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2.5 ${task.completed ? 'bg-slate-50/70 border-slate-200' : ''}`;
           
           card.innerHTML = `
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              <button onclick="App.togglePersonalTask('${task.id}')" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl active:scale-90 transition-transform">
-                <div class="w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white hover:border-indigo-400 text-transparent'}">
-                  <i class="fa-solid fa-check text-xs"></i>
+            <div class="flex items-center gap-2.5 flex-1 min-w-0">
+              <button onclick="App.togglePersonalTask('${task.id}')" class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl active:scale-90 transition">
+                <div class="w-6 h-6 rounded-lg border-2 flex items-center justify-center ${task.completed ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white text-transparent'}">
+                  <i class="fa-solid fa-check text-[10px]"></i>
                 </div>
               </button>
               <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-                  <span class="text-[11px] font-bold text-slate-800 flex items-center gap-1">
-                    <i class="fa-regular fa-clock text-slate-400 text-[10px]"></i> ${task.start} – ${task.end}
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-bold text-slate-800 flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-slate-400 text-[9px]"></i> ${task.start} – ${task.end}
                   </span>
-                  <span class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-600">${task.category}</span>
+                  <span class="text-[8px] px-1.5 py-0.2 rounded font-semibold bg-slate-100 text-slate-600">${task.category}</span>
                 </div>
-                <h4 class="text-xs sm:text-sm font-semibold text-slate-900 truncate ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
-                ${task.notes ? `<p class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtml(task.notes)}</p>` : ''}
+                <h4 class="text-xs font-semibold text-slate-900 truncate ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
               </div>
             </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button onclick="App.openPersonalTaskModal('${task.id}')" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
-              <button onclick="App.deletePersonalTask('${task.id}')" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+            <div class="flex items-center gap-0.5 flex-shrink-0">
+              <button onclick="App.openPersonalTaskModal('${task.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-50"><i class="fa-solid fa-pen text-xs"></i></button>
+              <button onclick="App.deletePersonalTask('${task.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-50"><i class="fa-solid fa-trash-can text-xs"></i></button>
             </div>
           `;
           taskListEl.appendChild(card);
@@ -1410,8 +1497,8 @@
           renderPersonalDayTasks();
           broadcastFullState();
           if (task.completed) {
-            confetti({ particleCount: 30, spread: 50, origin: { y: 0.75 }, colors: ['#6366f1', '#10b981', '#f59e0b'] });
-            showToast('Time slot completed! 🎉');
+            confetti({ particleCount: 25, spread: 50, origin: { y: 0.75 }, colors: ['#6366f1', '#10b981'] });
+            showToast('Slot completed! 🎉');
           }
         }
       }
@@ -1478,11 +1565,7 @@
             state.personal.tasksByDate[taskDate][idx] = { ...state.personal.tasksByDate[taskDate][idx], title, start, end, priority, category, notes };
           }
         } else {
-          state.personal.tasksByDate[taskDate].push({
-            id: 'pt_' + Date.now(),
-            title, start, end, priority, category, notes,
-            completed: false
-          });
+          state.personal.tasksByDate[taskDate].push({ id: 'pt_' + Date.now(), title, start, end, priority, category, notes, completed: false });
         }
 
         closePersonalTaskModal();
@@ -1500,13 +1583,13 @@
         state.personal.habits.forEach(habit => {
           const item = document.createElement('button');
           item.type = 'button';
-          item.className = 'w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-between text-xs transition group';
+          item.className = 'w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-between text-xs transition group';
           item.innerHTML = `
             <div class="truncate">
               <span class="font-semibold text-slate-800">${escapeHtml(habit.title)}</span>
-              <span class="text-[10px] text-slate-400 block">${habit.start} - ${habit.end} • ${habit.category}</span>
+              <span class="text-[10px] text-slate-400 block">${habit.start} - ${habit.end}</span>
             </div>
-            <i class="fa-solid fa-plus text-slate-400 group-hover:text-indigo-600 transition flex-shrink-0 text-xs"></i>
+            <i class="fa-solid fa-plus text-slate-400 group-hover:text-indigo-600 transition text-xs"></i>
           `;
           item.onclick = () => {
             if (!state.personal.tasksByDate[currentDate]) state.personal.tasksByDate[currentDate] = [];
@@ -1527,13 +1610,13 @@
           container.appendChild(item);
 
           const mItem = document.createElement('div');
-          mItem.className = 'p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs bg-slate-50';
+          mItem.className = 'p-2.5 rounded-xl border border-slate-200 flex items-center justify-between text-xs bg-slate-50';
           mItem.innerHTML = `
             <div class="truncate mr-2">
               <p class="font-bold text-slate-800 truncate">${escapeHtml(habit.title)}</p>
-              <p class="text-[11px] text-slate-500">${habit.start} - ${habit.end}</p>
+              <p class="text-[10px] text-slate-500">${habit.start} - ${habit.end}</p>
             </div>
-            <button onclick="App.deleteHabitFromBank('${habit.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+            <button onclick="App.deleteHabitFromBank('${habit.id}')" class="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can text-xs"></i></button>
           `;
           masterList.appendChild(mItem);
         });
@@ -1548,7 +1631,7 @@
         renderHabitsBank();
         broadcastFullState();
         document.getElementById('input-new-habit-title').value = '';
-        showToast('Habit added to master bank!');
+        showToast('Habit added!');
       }
 
       function deleteHabitFromBank(id) {
@@ -1606,7 +1689,7 @@
         }
         closeEndDayReview();
         broadcastFullState();
-        showToast('Day finalized & archived!');
+        showToast('Day finalized!');
       }
 
       function renderPersonalAnalytics() {
@@ -1682,10 +1765,10 @@
           const navBtn = document.getElementById(`nav-office-${v}`);
           if (v === subView) {
             el.classList.remove('hidden');
-            navBtn.className = 'px-3 py-2 rounded-xl bg-blue-600 text-white transition flex items-center gap-1.5 shadow-xs font-bold';
+            navBtn.className = 'px-3 py-1.5 rounded-xl bg-blue-600 text-white transition flex items-center gap-1.5 shadow-xs font-bold';
           } else {
             el.classList.add('hidden');
-            navBtn.className = 'px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 font-bold';
+            navBtn.className = 'px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 font-bold';
           }
         });
 
@@ -1700,13 +1783,12 @@
 
       function renderOfficeDashboard() {
         const todayStr = getFormattedDate(new Date());
-        document.getElementById('office-today-badge').innerText = `Date: ${todayStr}`;
+        document.getElementById('office-today-badge').innerText = `Today: ${todayStr}`;
 
         const tasks = state.office.tasks;
         const dueToday = tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed');
         const overdue = tasks.filter(t => t.dueDate < todayStr && t.status !== 'completed');
         const pendingApprovals = tasks.filter(t => t.category === 'approval' && t.status !== 'completed');
-        
         const totalBudget = tasks.filter(t => t.status !== 'completed').reduce((acc, t) => acc + (Number(t.budget) || 0), 0);
 
         document.getElementById('office-kpi-today').innerText = dueToday.length;
@@ -1718,7 +1800,7 @@
         const todayContainer = document.getElementById('office-today-tasks-container');
         todayContainer.innerHTML = '';
         if (dueToday.length === 0) {
-          todayContainer.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center italic">No tasks due today. You are completely on track!</p>`;
+          todayContainer.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center italic">No deliverables due today. All caught up!</p>`;
         } else {
           dueToday.forEach(t => todayContainer.appendChild(createOfficeTaskCard(t)));
         }
@@ -1738,13 +1820,13 @@
         } else {
           upcoming.forEach(t => {
             const row = document.createElement('div');
-            row.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs task-card-hover';
+            row.className = 'p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs';
             row.innerHTML = `
               <div class="truncate mr-2">
                 <span class="font-bold text-slate-800 truncate block">${escapeHtml(t.title)}</span>
-                <span class="text-[10px] text-slate-500">${t.dueDate} • ${t.assignee || 'Unassigned'}</span>
+                <span class="text-[10px] text-slate-500">${t.dueDate}</span>
               </div>
-              <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md shrink-0">${t.category.toUpperCase()}</span>
+              <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded shrink-0">${t.category.toUpperCase()}</span>
             `;
             upcomingContainer.appendChild(row);
           });
@@ -1754,34 +1836,33 @@
       function createOfficeTaskCard(task) {
         const cat = officeCategoryStyles[task.category] || officeCategoryStyles.todo;
         const card = document.createElement('div');
-        card.className = `p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-2xs space-y-2 task-card-hover border-l-4 ${task.priority === 'high' ? 'border-l-rose-500' : task.priority === 'medium' ? 'border-l-amber-500' : 'border-l-emerald-500'}`;
+        card.className = `p-3 bg-white border border-slate-200/90 rounded-2xl shadow-2xs space-y-1.5 border-l-4 ${task.priority === 'high' ? 'border-l-rose-500' : task.priority === 'medium' ? 'border-l-amber-500' : 'border-l-emerald-500'}`;
 
-        let commentsCount = (task.updates && task.updates.length) ? `<span class="text-[10px] text-blue-600 font-semibold flex items-center gap-1"><i class="fa-regular fa-comments"></i> ${task.updates.length} updates</span>` : '';
-        let budgetHtml = task.budget ? `<span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">${formatINR(task.budget)}</span>` : '';
+        let commentsCount = (task.updates && task.updates.length) ? `<span class="text-[10px] text-blue-600 font-semibold"><i class="fa-regular fa-comments"></i> ${task.updates.length}</span>` : '';
+        let budgetHtml = task.budget ? `<span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">${formatINR(task.budget)}</span>` : '';
 
         card.innerHTML = `
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${cat.badge}">
-              <i class="fa-solid ${cat.icon} mr-1"></i> ${cat.label}
+          <div class="flex items-center justify-between gap-1.5">
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${cat.badge}">
+              <i class="fa-solid ${cat.icon} mr-0.5"></i> ${cat.label}
             </span>
             <div class="flex items-center gap-1">
               ${budgetHtml}
-              <button onclick="App.openOfficeTaskModal('${task.id}')" class="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition"><i class="fa-solid fa-pen text-xs"></i></button>
-              <button onclick="App.deleteOfficeTask('${task.id}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+              <button onclick="App.openOfficeTaskModal('${task.id}')" class="p-1 text-slate-400 hover:text-blue-600"><i class="fa-solid fa-pen text-[10px]"></i></button>
+              <button onclick="App.deleteOfficeTask('${task.id}')" class="p-1 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
             </div>
           </div>
           <div>
             <h4 class="text-xs font-bold text-slate-900 leading-snug ${task.status === 'completed' ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
-            ${task.description ? `<p class="text-[11px] text-slate-500 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>` : ''}
           </div>
-          <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] text-slate-500">
+          <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-500">
             <div class="flex items-center gap-2">
-              <span><i class="fa-regular fa-calendar"></i> ${task.dueDate}</span>
-              ${task.assignee ? `<span><i class="fa-solid fa-user text-slate-400"></i> ${escapeHtml(task.assignee)}</span>` : ''}
+              <span><i class="fa-regular fa-calendar text-[9px]"></i> ${task.dueDate}</span>
+              ${task.assignee ? `<span><i class="fa-solid fa-user text-[9px]"></i> ${escapeHtml(task.assignee)}</span>` : ''}
               ${commentsCount}
             </div>
-            <button onclick="App.cycleOfficeTaskStatus('${task.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold rounded-lg transition">
-              ${task.status === 'completed' ? 'Mark Pending' : task.status === 'waiting' ? 'Mark Done' : 'Start &rarr;'}
+            <button onclick="App.cycleOfficeTaskStatus('${task.id}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold rounded transition">
+              ${task.status === 'completed' ? 'Undo' : task.status === 'waiting' ? 'Done' : 'Start'}
             </button>
           </div>
         `;
@@ -1790,7 +1871,6 @@
 
       function renderOfficeKanban() {
         const catFilter = document.getElementById('office-filter-category').value;
-        const priFilter = document.getElementById('office-filter-priority').value;
         const search = (document.getElementById('office-filter-search').value || '').toLowerCase();
 
         const colP = document.getElementById('col-kanban-pending');
@@ -1802,7 +1882,6 @@
 
         state.office.tasks.filter(t => {
           if (catFilter && t.category !== catFilter) return false;
-          if (priFilter && t.priority !== priFilter) return false;
           if (search && !t.title.toLowerCase().includes(search) && !(t.assignee || '').toLowerCase().includes(search)) return false;
           return true;
         }).forEach(t => {
@@ -1832,7 +1911,7 @@
         else task.status = 'pending';
 
         if (task.status === 'completed') {
-          confetti({ particleCount: 35, spread: 60, origin: { y: 0.8 }, colors: ['#2563eb', '#10b981'] });
+          confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors: ['#2563eb', '#10b981'] });
         }
         broadcastFullState();
         renderOfficeKanban();
@@ -1914,20 +1993,20 @@
         broadcastFullState();
         renderOfficeDashboard();
         renderOfficeKanban();
-        showToast('Office task deleted.');
+        showToast('Office task removed.');
       }
 
       function renderOfficeTaskComments(updates) {
         const list = document.getElementById('office-updates-list');
         list.innerHTML = '';
         if (!updates || updates.length === 0) {
-          list.innerHTML = `<p class="text-[11px] text-slate-400 italic">No updates logged yet.</p>`;
+          list.innerHTML = `<p class="text-[10px] text-slate-400 italic">No updates logged yet.</p>`;
           return;
         }
         updates.forEach(u => {
           list.innerHTML += `
-            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
-              <span class="font-bold text-blue-600 block text-[10px] mb-0.5">${u.ts}</span>
+            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 text-xs">
+              <span class="font-bold text-blue-600 block text-[9px]">${u.ts}</span>
               <p class="text-slate-700">${escapeHtml(u.text)}</p>
             </div>
           `;
@@ -1947,7 +2026,7 @@
         document.getElementById('office-new-comment-input').value = '';
         renderOfficeTaskComments(task.updates);
         broadcastFullState();
-        showToast('Update note added!');
+        showToast('Comment recorded!');
       }
 
       // ================= OFFICE WORKING DAYS & HOLIDAYS =================
@@ -1984,9 +2063,9 @@
           broadcastFullState();
           renderOfficeDashboard();
           renderOfficeKanban();
-          showToast(`Rolled over ${count} incomplete tasks to next working day (${nextWorkDay})!`);
+          showToast(`Rolled over ${count} tasks to next working day (${nextWorkDay})!`);
         } else {
-          showToast('No overdue or incomplete tasks to roll over.');
+          showToast('No overdue tasks to roll over.');
         }
       }
 
@@ -2001,10 +2080,8 @@
         grid.innerHTML = '';
 
         let workingCount = 0;
-
-        // Empty padding cells
         for (let i = 0; i < firstDay; i++) {
-          grid.innerHTML += `<div class="calendar-day-box p-1 bg-slate-50/50 rounded-xl border border-slate-100"></div>`;
+          grid.innerHTML += `<div class="calendar-day-box p-1 bg-slate-50 rounded-lg"></div>`;
         }
 
         const todayStr = getFormattedDate(new Date());
@@ -2021,13 +2098,13 @@
           let bg = isToday ? 'bg-blue-50 border-2 border-blue-600' : holiday ? 'bg-rose-50 border-rose-200' : !isWork ? 'bg-slate-100 text-slate-400' : 'bg-white border-slate-200';
 
           grid.innerHTML += `
-            <div onclick="App.openDayTasksFromCalendar('${dateStr}')" class="calendar-day-box p-1.5 rounded-xl border flex flex-col justify-between cursor-pointer hover:shadow-xs ${bg}">
+            <div onclick="App.openDayTasksFromCalendar('${dateStr}')" class="calendar-day-box p-1 rounded-lg border flex flex-col justify-between cursor-pointer ${bg}">
               <div class="flex items-center justify-between">
-                <span class="font-extrabold text-xs">${day}</span>
-                ${holiday ? `<span class="text-[8px] font-bold text-rose-600 truncate">Off</span>` : ''}
+                <span class="font-extrabold text-[11px]">${day}</span>
+                ${holiday ? `<span class="text-[7px] font-bold text-rose-600">Off</span>` : ''}
               </div>
               <div>
-                ${tasks.length ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-800">${tasks.length} tasks</span>` : ''}
+                ${tasks.length ? `<span class="text-[8px] font-bold px-1 py-0.2 rounded bg-blue-100 text-blue-800">${tasks.length}</span>` : ''}
               </div>
             </div>
           `;
@@ -2055,9 +2132,8 @@
       function openDayTasksFromCalendar(dateStr) {
         document.getElementById('office-filter-search').value = '';
         document.getElementById('office-filter-category').value = '';
-        document.getElementById('office-filter-priority').value = '';
         switchOfficeSubView('tasks');
-        showToast(`Viewing office deliverables for ${dateStr}`);
+        showToast(`Viewing deliverables for ${dateStr}`);
       }
 
       function renderWorkingDaysAndHolidaysRules() {
@@ -2067,7 +2143,7 @@
         days.forEach((d, i) => {
           const checked = state.office.workingDays.includes(i) ? 'checked' : '';
           container.innerHTML += `
-            <label class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer">
+            <label class="flex items-center gap-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold cursor-pointer">
               <input type="checkbox" value="${i}" ${checked} onchange="App.toggleWorkingDayConfig(${i}, this.checked)"> ${d}
             </label>
           `;
@@ -2077,7 +2153,7 @@
         tags.innerHTML = '';
         state.office.holidays.forEach(h => {
           tags.innerHTML += `
-            <div class="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg">
+            <div class="flex items-center gap-1 px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg">
               <span>${h.date} (${escapeHtml(h.title)})</span>
               <button onclick="App.deleteOfficeHoliday('${h.date}')" class="hover:text-rose-900 ml-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -2118,21 +2194,18 @@
         container.innerHTML = '';
         const meetings = state.office.tasks.filter(t => t.category === 'meeting');
         if (meetings.length === 0) {
-          container.innerHTML = `<p class="text-xs text-slate-400 py-8 text-center italic">No meetings scheduled.</p>`;
+          container.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center italic">No meetings scheduled.</p>`;
           return;
         }
         meetings.forEach(m => {
           const item = document.createElement('div');
-          item.className = 'p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs task-card-hover';
+          item.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs';
           item.innerHTML = `
-            <div class="space-y-1">
-              <h4 class="font-bold text-sm text-slate-800">${escapeHtml(m.title)}</h4>
-              <p class="text-slate-500"><i class="fa-regular fa-calendar"></i> Date: ${m.dueDate} | Stakeholder: ${m.assignee || 'General'}</p>
-              ${m.description ? `<p class="text-slate-600 italic">${escapeHtml(m.description)}</p>` : ''}
+            <div class="space-y-0.5">
+              <h4 class="font-bold text-xs text-slate-800">${escapeHtml(m.title)}</h4>
+              <p class="text-[10px] text-slate-500">${m.dueDate} | Stakeholder: ${m.assignee || 'General'}</p>
             </div>
-            <div class="flex items-center gap-1.5">
-              <button onclick="App.openOfficeTaskModal('${m.id}')" class="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-800 font-bold">Edit</button>
-            </div>
+            <button onclick="App.openOfficeTaskModal('${m.id}')" class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-[11px]">Edit</button>
           `;
           container.appendChild(item);
         });
@@ -2141,30 +2214,27 @@
       function renderOfficeApprovals() {
         const mine = document.getElementById('office-approvals-mine');
         const others = document.getElementById('office-approvals-others');
-        mine.innerHTML = '';
-        others.innerHTML = '';
+        mine.innerHTML = ''; others.innerHTML = '';
 
         const approvals = state.office.tasks.filter(t => t.category === 'approval');
         const myPending = approvals.filter(t => t.status === 'pending');
         const awaiting = approvals.filter(t => t.status !== 'completed');
 
-        if (myPending.length === 0) mine.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center italic">No pending sign-offs.</p>`;
+        if (myPending.length === 0) mine.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center italic">No pending sign-offs.</p>`;
         myPending.forEach(t => {
           mine.innerHTML += `
-            <div class="p-3 bg-rose-50/50 border border-rose-200 rounded-xl text-xs space-y-1.5">
+            <div class="p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs space-y-1">
               <p class="font-bold text-slate-800">${escapeHtml(t.title)}</p>
-              <p class="text-[10px] text-slate-500">From: ${t.assignee || 'Department'} | Due: ${t.dueDate}</p>
-              <div class="flex gap-2 pt-1">
-                <button onclick="App.cycleOfficeTaskStatus('${t.id}')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[10px]">Approve & Mark Done</button>
-              </div>
+              <p class="text-[10px] text-slate-500">${t.dueDate} | From: ${t.assignee || 'Office'}</p>
+              <button onclick="App.cycleOfficeTaskStatus('${t.id}')" class="px-2 py-0.5 bg-emerald-600 text-white rounded font-bold text-[10px]">Approve</button>
             </div>
           `;
         });
 
-        if (awaiting.length === 0) others.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center italic">No items awaiting approval.</p>`;
+        if (awaiting.length === 0) others.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center italic">No items awaiting approval.</p>`;
         awaiting.forEach(t => {
           others.innerHTML += `
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
               <p class="font-bold text-slate-800">${escapeHtml(t.title)}</p>
               <p class="text-[10px] text-blue-600 font-bold">Status: ${t.status.toUpperCase()}</p>
             </div>
@@ -2185,19 +2255,18 @@
           categoryMap[t.category] = (categoryMap[t.category] || 0) + t.budget;
 
           list.innerHTML += `
-            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs task-card-hover">
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
               <div>
                 <h4 class="font-bold text-slate-800">${escapeHtml(t.title)}</h4>
-                <p class="text-[10px] text-slate-500">Due: ${t.dueDate} | ${t.category.toUpperCase()}</p>
+                <p class="text-[10px] text-slate-500">Due: ${t.dueDate}</p>
               </div>
-              <span class="text-sm font-black text-emerald-600">${formatINR(t.budget)}</span>
+              <span class="text-xs font-bold text-emerald-600">${formatINR(t.budget)}</span>
             </div>
           `;
         });
 
         document.getElementById('office-budget-total-text').innerText = `Total Sanctions: ${formatINR(total)}`;
 
-        // Doughnut Chart
         const ctx = document.getElementById('officeBudgetChart').getContext('2d');
         if (budgetChartInstance) budgetChartInstance.destroy();
         budgetChartInstance = new Chart(ctx, {
@@ -2213,7 +2282,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+              legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } },
               tooltip: {
                 callbacks: {
                   label: (ctx) => ` ${ctx.label}: ${formatINR(ctx.raw)}`
@@ -2228,17 +2297,17 @@
         const list = document.getElementById('office-templates-list');
         list.innerHTML = '';
         if (state.office.recurring.length === 0) {
-          list.innerHTML = `<p class="text-xs text-slate-400 py-4 italic">No recurring workflow templates created.</p>`;
+          list.innerHTML = `<p class="text-xs text-slate-400 py-3 italic">No recurring workflow templates created.</p>`;
           return;
         }
         state.office.recurring.forEach(t => {
           list.innerHTML += `
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
               <div>
                 <span class="font-bold text-slate-800 block">${escapeHtml(t.title)}</span>
                 <span class="text-[10px] text-slate-500">${t.category.toUpperCase()} • ${t.rule}</span>
               </div>
-              <button onclick="App.deleteOfficeRecurringTemplate('${t.id}')" class="text-rose-500 hover:text-rose-700 p-2"><i class="fa-solid fa-trash-can"></i></button>
+              <button onclick="App.deleteOfficeRecurringTemplate('${t.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           `;
         });
@@ -2292,7 +2361,7 @@
                   status: 'pending',
                   priority: 'medium',
                   dueDate: safeWorkDate,
-                  description: 'Recurring template deliverable'
+                  description: 'Recurring deliverable'
                 });
                 count++;
               }
@@ -2303,7 +2372,7 @@
         broadcastFullState();
         renderOfficeDashboard();
         renderOfficeCalendar();
-        showToast(`Populated ${count} deliverables for ${officeCalendarMonth.toLocaleDateString('en-US', { month: 'short' })}!`);
+        showToast(`Populated ${count} deliverables for the month!`);
       }
 
       // ================= PASSCODE & BACKUPS =================
@@ -2331,7 +2400,6 @@
 
         loadLocalFallback();
 
-        // Check if passcode is OFFICE to trigger office mode
         if (currentPasscode.includes('OFFICE')) {
           switchMode('office');
           showToast(`Unlocked Office Pro with passcode "${currentPasscode}"! 🏢`);
@@ -2345,18 +2413,13 @@
       }
 
       function exportFullBackupJSON() {
-        const payload = {
-          version: '3.0',
-          passcode: currentPasscode,
-          exportedAt: new Date().toISOString(),
-          state: state
-        };
+        const payload = { version: '3.0', passcode: currentPasscode, exportedAt: new Date().toISOString(), state };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `DayTrack_Office_Backup_${getFormattedDate(new Date())}.json`;
         a.click();
-        showToast('Unified backup exported! 💾');
+        showToast('Backup downloaded! 💾');
       }
 
       function importFullBackupJSON(event) {
@@ -2392,6 +2455,8 @@
 
       function init() {
         loadLocalFallback();
+        initVoiceDictation();
+
         document.getElementById('personal-date-picker').value = currentDate;
         document.getElementById('personal-date-picker').addEventListener('change', (e) => {
           if (e.target.value) {
@@ -2400,7 +2465,6 @@
           }
         });
 
-        // If passcode already has OFFICE, start in office mode
         if (currentPasscode.includes('OFFICE')) {
           switchMode('office');
         } else {
@@ -2420,7 +2484,6 @@
       return {
         init,
         switchMode,
-        handleHeaderAddAction,
         openPasscodeModal,
         closePasscodeModal,
         setPasscodeQuick,
@@ -2429,8 +2492,10 @@
         forcePullCloud: () => pullLatestFromCloud(false),
         exportFullBackupJSON,
         importFullBackupJSON,
+        startDictation,
 
         // Personal
+        submitPersonalQuickAdd,
         changeDate,
         goToToday,
         planTomorrow,
@@ -2451,6 +2516,7 @@
         finalizeEndDayReview,
 
         // Office
+        submitOfficeQuickAdd,
         switchOfficeSubView,
         renderOfficeKanban,
         cycleOfficeTaskStatus,
